@@ -129,20 +129,7 @@ Output: One short paragraph (max 35 words) in English.  *Only* the first impress
 """,
         'temperature': 0.4
     },
-     'prompt4_cogcap_scores': {
-        'text': """Read 'Context and Task Description' and 'Capacity test results'.
-Find the six cognitive capacity scores: general ability, speed, accuracy, verbal, numerical, abstract.
-
-Output: A *string* containing a Python list.  *Nothing else*.
-Order: [general_ability, speed, accuracy, verbal, numerical, abstract]
-
-Example: "[75, 80, 85, 70, 65, 78]"
-
-The output *must* be a directly usable Python list string (enclosed in double quotes). No extra text, no "python" labels. **DO NOT USE BACKSLASHES IN THE OUTPUT. NEVER USE BACKSLASHES.**
-""",
-        'temperature': 0.1
-    },
-     'prompt4_cogcap_scores': {
+     'prompt4_cogcap_remarks': {
         
         'text': """Analyze the provided images containing cognitive capacity test results.
 Your task is to extract the **percentile scores** for six specific categories.
@@ -162,7 +149,20 @@ Your task is to extract the **percentile scores** for six specific categories.
 
 **Based on the provided images, generate the required Python list string.**
 """,
-        'temperature': 0.0
+        'temperature': 0.1
+    },
+     'prompt4_cogcap_remarks': {
+        
+'text': """Read 'Capacity test results'.
+Write a 2-3 sentence summary interpreting the results of a trainee named Piet.
+Focus on:
+  - Overall general ability.
+  - Speed vs. accuracy.
+  - Sub-test performance (verbal, numerical, abstract).
+
+Output: *Only* the summary text in English. No labels, formatting, or extra sentences. Do not give any lists relates to other prompts! **DO NOT USE BACKSLASHES IN THE OUTPUT. NEVER USE BACKSLASHES.**
+""",
+        'temperature': 0.3
     },
     'prompt5_language': {
         'text': """Determine the trainee's language levels (Dutch, French, English).
