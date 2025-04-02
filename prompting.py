@@ -143,6 +143,7 @@ The output *must* be a directly usable Python list string (enclosed in double qu
         'temperature': 0.1
     },
      'prompt4_cogcap_scores': {
+        
         'text': """Analyze the provided images containing cognitive capacity test results.
 Your task is to extract the **percentile scores** for six specific categories.
 
