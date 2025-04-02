@@ -3,12 +3,8 @@
 ART is a Python-based application designed to automate the generation of assessment reports for ORMIT Talent. The tool leverages Gemini AI to analyze assessment data and produce professional, consistently formatted reports.
 
 ## Features
-
-<<<<<<< HEAD
 - **Multiple Program Types**: Supports various assessment types including MCP, DATA, ICP, and NEW traineeships
-=======
 - **Multiple Program Types**: Supports various assessment types including MCP, DATA and ICP
->>>>>>> 0cbdff85da7afa9f0e6ff696314a0fe87f37f664
 - **Automated Report Generation**: Transforms assessment data into structured Word document reports
 - **Sensitive Data Protection**: Automatically redacts candidate and assessor personal information
 - **AI-Powered Analysis**: Uses Gemini AI to extract insights from assessment materials
