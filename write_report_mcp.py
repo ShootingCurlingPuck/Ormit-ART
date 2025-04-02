@@ -167,7 +167,14 @@ def update_document(output_dic, name, assessor, gender, program):
     # --- Save Document ---
     current_time = datetime.now()
     formatted_time = current_time.strftime("%m%d%H%M")
-    updated_doc_path = f"Assessment Report - {name} - {formatted_time}.docx"
+    
+    # Define output directory and ensure it exists
+    output_dir = "output_reports"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+        
+    # Save to the output directory
+    updated_doc_path = os.path.join(output_dir, f"Assessment Report - {name} - {formatted_time}.docx")
     try:
         # Apply final paragraph splitting and styling *before* saving
         split_paragraphs_at_marker_and_style(doc)

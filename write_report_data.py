@@ -111,6 +111,14 @@ def update_document(output_dic, name, assessor, gender, program):
     add_content_detailstable(doc, [name, "", program, "", ""])
     replace_and_format_header_text(doc, name)
     add_content_cogcaptable(doc, output_dic.get('prompt4_cogcap_scores', "[]"))
+    
+    # --- Add language levels to language skills table (14th table) ---
+    language_replacements_str = output_dic.get('prompt5_language', "[]")
+    # Ensure backslashes are removed before parsing
+    if isinstance(language_replacements_str, str):
+        language_replacements_str = language_replacements_str.replace("\\", "")
+    language_levels = _safe_literal_eval(language_replacements_str, [])
+    update_language_skills_table(doc, language_levels)
 
     # --- Conclusion Table ---
     # Pass the processed list from the _original key
@@ -141,7 +149,14 @@ def update_document(output_dic, name, assessor, gender, program):
     # --- Save Document ---
     current_time = datetime.now()
     formatted_time = current_time.strftime("%m%d%H%M")
-    updated_doc_path = f"Assessment Report - {name} - {formatted_time}.docx"
+    
+    # Define output directory and ensure it exists
+    output_dir = "output_reports"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+        
+    # Save to the output directory
+    updated_doc_path = os.path.join(output_dir, f"Assessment Report - {name} - {formatted_time}.docx")
     try:
         # Apply final paragraph splitting and styling *before* saving
         split_paragraphs_at_marker_and_style(doc) # This handles the display format
@@ -495,3 +510,136 @@ def replace_and_format_header_text(doc, new_text):
                     rFonts.set(qn('w:ascii'), 'Montserrat SemiBold')
                     rFonts.set(qn('w:hAnsi'), 'Montserrat SemiBold')
                     run._element.rPr.append(rFonts)
+
+def update_language_skills_table(doc, language_levels):
+    """
+    Updates the language skills table (14th table) with language proficiency levels.
+    
+    Args:
+        doc: The Word document
+        language_levels: List of language levels [Dutch, French, English]
+    """
+    # Get the language skills table (14th table)
+    table = _safe_get_table(doc, LANGUAGE_SKILLS_TABLE_INDEX)
+    if not table:
+        print("Warning: Language skills table not found.")
+        return
+    
+    # Define language names for row identification
+    language_names = ["Dutch", "French", "English"]
+    
+    # Valid language levels for matching
+    valid_levels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
+    
+    # Find all rows that contain "A1/B1/B2.." - these are our language rows
+    language_rows = []
+    for row_index, row in enumerate(table.rows):
+        # Skip header row
+        if row_index == 0:
+            continue
+            
+        # Get the first cell text to identify if it's a language row
+        if len(row.cells) == 0:
+            continue
+            
+        first_cell_text = row.cells[0].text.strip()
+        if "A1/B1/B2" in first_cell_text:
+            language_rows.append(row_index)
+    
+    # Update each language row with its corresponding level
+    for i, row_index in enumerate(language_rows):
+        if i >= len(language_levels):
+            print(f"Warning: No level provided for language row {i+1}")
+            continue
+            
+        raw_level = language_levels[i]
+        
+        # Normalize the level - extract A1/B1/C1 pattern if present
+        normalized_level = None
+        if isinstance(raw_level, str):
+            # Clean any remaining quotes or backslashes
+            raw_level = raw_level.replace('"', '').replace("'", "").replace("\\", "").strip()
+            
+            # Try to find a valid level pattern
+            for valid_level in valid_levels:
+                if valid_level.upper() in raw_level.upper():
+                    normalized_level = valid_level.upper()
+                    break
+                    
+            # If we couldn't find a match, look for level characters (A/B/C) and numbers (1/2)
+            if normalized_level is None:
+                level_match = re.search(r'([A-Ca-c]).*?([1-2])', raw_level)
+                if level_match:
+                    level_char = level_match.group(1).upper()
+                    level_num = level_match.group(2)
+                    normalized_level = f"{level_char}{level_num}"
+                    
+                    # Verify it's a valid level
+                    if normalized_level not in [level.upper() for level in valid_levels]:
+                        print(f"Warning: Extracted invalid level {normalized_level} from {raw_level}, using as is")
+                    
+        # If we couldn't normalize, use the raw level
+        if normalized_level is None:
+            print(f"Warning: Unable to normalize language level '{raw_level}', using as is")
+            normalized_level = str(raw_level).upper()
+        
+        # Replace the "A1/B1/B2.." placeholder in the first cell
+        row = table.rows[row_index]
+        first_cell = row.cells[0]
+        
+        # Check if the first cell actually contains the A1/B1/B2 placeholder
+        if "A1/B1/B2" in first_cell.text:
+            # Extract any text before the placeholder (likely the language name)
+            original_text = first_cell.text.strip()
+            language_prefix = original_text.split("A1/B1/B2")[0].strip()
+            
+            # Set the text to include both the language name and the level
+            _safe_set_text(first_cell, "")
+            para = first_cell.paragraphs[0]
+            
+            # Add language name with original formatting
+            if language_prefix:
+                run_prefix = para.add_run(language_prefix + " ")
+                run_prefix.font.name = 'Montserrat'
+                run_prefix.font.size = Pt(10)
+            
+            # Add the level with bold formatting
+            run_level = para.add_run(normalized_level)
+            run_level.font.name = 'Montserrat'
+            run_level.font.size = Pt(10)
+            run_level.font.bold = True
+        else:
+            # Just set the level if we don't find the expected placeholder
+            _safe_set_text(first_cell, normalized_level)
+            run = first_cell.paragraphs[0].runs[0] if first_cell.paragraphs[0].runs else first_cell.paragraphs[0].add_run()
+            run.font.name = 'Montserrat'
+            run.font.size = Pt(10)
+            run.font.bold = True
+        
+        # Find all cells with proficiency level placeholders (A1, B1, B2, etc.)
+        for cell_index, cell in enumerate(row.cells):
+            if cell_index == 0:  # Skip the first cell we just updated
+                continue
+                
+            cell_text = cell.text.strip()
+            
+            # Check if this cell has an A1/B1/C1-style placeholder
+            if re.match(r'[A-C][1-2]', cell_text):
+                # Format the cell based on whether it matches the candidate's level
+                if cell_text.upper() == normalized_level:
+                    # Highlight the matched level
+                    _safe_set_text(cell, "")
+                    para = cell.paragraphs[0]
+                    run = para.add_run(normalized_level)
+                    run.font.name = 'Montserrat'
+                    run.font.size = Pt(10)
+                    run.font.bold = True
+                    run.font.color.rgb = RGBColor(0, 0, 0)  # Black
+                else:
+                    # Keep the placeholder for other levels, but make it less prominent
+                    _safe_set_text(cell, "")
+                    para = cell.paragraphs[0]
+                    run = para.add_run(cell_text)
+                    run.font.name = 'Montserrat Light'
+                    run.font.size = Pt(9)
+                    run.font.color.rgb = RGBColor(150, 150, 150)  # Light gray

@@ -79,7 +79,7 @@ class Redactor:
 
             if changes > 0:
                 # Save the redacted file, overwriting the original in the temp folder
-                doc.save(filename, incremental=False, encryption=fitz.PDF_ENCRYPT_KEEP)
+                doc.save(filename, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
                 print(f"  Applied {changes} redactions to {filename}")
             else:
                 print(f"  No target names found in {filename}")
@@ -102,6 +102,9 @@ def create_temp_folder():
             
 def redact_folder(GUI_data):
     """Redacts specified names in the specific PDF files provided via GUI_data."""
+
+    # Make sure temp folder exists
+    create_temp_folder()
 
     # Extract names needed for redaction from GUI_data
     applicant_name = GUI_data.get("Applicant Name", "").strip()
@@ -127,13 +130,44 @@ def redact_folder(GUI_data):
         print("Warning: No files found in GUI_data['Files'] to process.")
         return
 
+    # --- First, copy all files to the temp directory ---
     for file_key, file_path in files_to_process.items():
-        # The file_path should be the full path copied to the temp folder
-        # or the original path if copying wasn't implemented.
-        # Let's assume the path passed is the one to redact.
-
         if not file_path or not os.path.isfile(file_path):
-            print(f"Skipping redaction for '{file_key}': File path missing or invalid ('{file_path}')")
+            print(f"Skipping copy for '{file_key}': File path missing or invalid ('{file_path}')")
+            continue
+
+        # Determine destination name in temp directory
+        # Use standard names expected by send_prompts
+        if file_key == "PAPI Gebruikersrapport":
+            dest_path = "temp/PAPI Gebruikersrapport.pdf"
+        elif file_key == "Cog. Test":
+            dest_path = "temp/Cog. Test.pdf"
+        elif file_key == "Assessment Notes":
+            dest_path = "temp/Assessment Notes.pdf"
+        elif file_key == "ICP Description":
+            # For ICP Description, keep the original extension
+            extension = os.path.splitext(file_path)[1]
+            dest_path = f"temp/ICP Description{extension}"
+        else:
+            # For any other files, keep original name
+            dest_path = f"temp/{os.path.basename(file_path)}"
+            
+        try:
+            # Copy the file to temp directory
+            print(f"Copying {file_path} to {dest_path}")
+            shutil.copy2(file_path, dest_path)
+            
+            # Update the file path in GUI_data to point to the new location
+            GUI_data["Files"][file_key] = dest_path
+        except Exception as e:
+            print(f"Error copying file {file_path} to temp directory: {e}")
+            continue
+
+    # --- Now redact the files in the temp directory ---
+    for file_key, file_path in GUI_data["Files"].items():
+        # Skip if file path is invalid after copying
+        if not file_path or not os.path.isfile(file_path):
+            print(f"Skipping redaction for '{file_key}': File path missing or invalid after copy ('{file_path}')")
             continue
 
         # --- Only redact PDF files ---
@@ -144,8 +178,5 @@ def redact_folder(GUI_data):
             except Exception as e:
                 # Log error but continue with other files
                 print(f"ERROR redacting file {file_path}: {e}")
-        # else: # Implicitly skip non-PDF files like the ICP Description docx
-            # print(f"Skipping non-PDF file: {file_path}")
-
 
     print("Redaction process finished.")

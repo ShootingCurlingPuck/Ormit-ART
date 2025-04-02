@@ -397,7 +397,13 @@ def send_prompts(data):
     current_time = datetime.now()
     formatted_time = current_time.strftime("%m%d%H%M")
     appl_name = data["Applicant Name"]
-    filename_with_timestamp = f"{appl_name}_{formatted_time}.json"
+    # Update to save to output_reports directory
+    output_dir = "output_reports"
+    # Create the output directory if it doesn't exist
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    # Set the file path to be in the output directory
+    filename_with_timestamp = os.path.join(output_dir, f"{appl_name}_{formatted_time}.json")
 
     path_to_notes = r'temp/Assessment Notes.pdf'
     path_to_persontest = r'temp/PAPI Gebruikersrapport.pdf'
@@ -526,10 +532,15 @@ Specific Instructions:
                 print(f"Applied CRITICAL ICP info to prompt: {prom}")
 
         # Create model with specific temperature
+        # Select model based on prompt type
+        model_name = "gemini-2.0-flash" if prom in ['prompt4_cogcap_scores', 'prompt4_cogcap_remarks', 'prompt5_language'] else "gemini-2.5-pro-exp-03-25"
+        
         model = genai.GenerativeModel(
-            model_name="gemini-2.5-pro-exp-03-25",
+            model_name=model_name,
             generation_config={"temperature": temperature}
         )
+        
+        print(f"Using model {model_name} for prompt: {prom}")
         
         # Construct the full prompt using the general context
         full_prompt = f"{final_prompt_text}\n\nUse the following files to complete the tasks. Do not give any output for this prompt.\n{general_context}"
@@ -643,10 +654,15 @@ Specific Instructions:
 {prompt_text}"""
                         print(f"Applied CRITICAL ICP info to RETRY prompt: {prom}")
 
+                # Select model based on prompt type for retries too
+                model_name = "gemini-2.0-flash" if prom in ['prompt4_cogcap_scores', 'prompt4_cogcap_remarks', 'prompt5_language'] else "gemini-2.5-pro-exp-03-25"
+                
                 model = genai.GenerativeModel(
-                    model_name="gemini-2.0-flash-001", 
+                    model_name=model_name, 
                     generation_config={"temperature": temperature}
                 )
+                
+                print(f"Using model {model_name} for RETRY prompt: {prom}")
                 
                 # Use general_context built earlier
                 full_prompt_retry = f"{final_prompt_text_retry}\n\nUse the following files to complete the tasks. Do not give any output for this prompt.\n{general_context}"
@@ -690,6 +706,8 @@ Specific Instructions:
             for line in lines:
                 stripped_line = line.strip()
                 is_bullet = stripped_line.startswith('*') or stripped_line.startswith('•')
+                # Simple check for summary paragraph
+                is_summary = "In summary" in stripped_line or "To summarize" in stripped_line
 
                 if is_bullet:
                     content = stripped_line[1:].strip()
@@ -698,8 +716,12 @@ Specific Instructions:
                         formatted_parts.append(content)
                         first_point = False
                     else:
-                        # Subsequent points need the marker and the bullet char
-                        formatted_parts.append("<<BREAK>>")
+                        # Add an extra break before summary if it's a bullet point
+                        if is_summary:
+                            formatted_parts.append("<<BREAK>>")
+                            formatted_parts.append("<<BREAK>>")
+                        else:
+                            formatted_parts.append("<<BREAK>>")
                         formatted_parts.append(f"• {content}") # Add bullet here
                 elif stripped_line and not first_point:
                      # Handle intro/summary lines *after* the first bullet
