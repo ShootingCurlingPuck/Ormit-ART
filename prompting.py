@@ -129,8 +129,8 @@ Output: One short paragraph (max 35 words) in English.  *Only* the first impress
 """,
         'temperature': 0.4
     },
-     'prompt4_cogcap_remarks': {
-        
+     
+'prompt4_cogcap_scores': {
         'text': """Analyze the provided images containing cognitive capacity test results.
 Your task is to extract the **percentile scores** for six specific categories.
 
@@ -149,11 +149,10 @@ Your task is to extract the **percentile scores** for six specific categories.
 
 **Based on the provided images, generate the required Python list string.**
 """,
-        'temperature': 0.1
+        'temperature': 0.0
     },
-     'prompt4_cogcap_remarks': {
-        
-'text': """Read 'Capacity test results'.
+    'prompt4_cogcap_remarks': {
+        'text': """Read 'Capacity test results'.
 Write a 2-3 sentence summary interpreting the results of a trainee named Piet.
 Focus on:
   - Overall general ability.
