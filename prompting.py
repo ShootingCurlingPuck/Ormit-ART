@@ -155,7 +155,7 @@ Your task is to extract the **percentile scores** for six specific categories.
     *   Your output must be a *string* representing a standard Python list of integers.
     *   The string must start *exactly* with `[` and end *exactly* with `]`.
     *   There should be *absolutely no other text*, formatting, labels (like "python"), or explanations before or after the list string.
-    *   **DO NOT USE BACKSLASHES.**
+    *   **DO NOT USE BACKSLASHES. SO NO \**
 
 **Example for DIFFERENT scores (do not copy these numbers):** "[75, 80, 85, 70, 65, 78]"
 
