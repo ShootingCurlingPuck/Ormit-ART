@@ -142,17 +142,26 @@ The output *must* be a directly usable Python list string (enclosed in double qu
 """,
         'temperature': 0.1
     },
-    'prompt4_cogcap_remarks': {
-        'text': """Read 'Capacity test results'.
-Write a 2-3 sentence summary interpreting the results of a trainee named Piet.
-Focus on:
-  - Overall general ability.
-  - Speed vs. accuracy.
-  - Sub-test performance (verbal, numerical, abstract).
+     'prompt4_cogcap_scores': {
+        'text': """Analyze the provided images containing cognitive capacity test results.
+Your task is to extract the **percentile scores** for six specific categories.
 
-Output: *Only* the summary text in English. No labels, formatting, or extra sentences. Do not give any lists relates to other prompts! **DO NOT USE BACKSLASHES IN THE OUTPUT. NEVER USE BACKSLASHES.**
+1.  **Identify the Categories:** Look for 'Total score', 'Speed', 'Accuracy' in the first image, and 'Verbal', 'Numerical', 'Abstract' in the second image.
+2.  **Map 'Total score':** Treat the 'Total score' value as the 'general_ability' score.
+3.  **Extract Percentile Scores:** For each category, find the **large blue number** located at the end of the blue bar. **Ignore** the smaller number in parentheses (the sten score).
+4.  **Required Scores & Order:** You must find these six scores and arrange them in this specific order:
+    [general_ability, speed, accuracy, verbal, numerical, abstract]
+5.  **Output Format:**
+    *   Your output must be a *string* representing a standard Python list of integers.
+    *   The string must start *exactly* with `[` and end *exactly* with `]`.
+    *   There should be *absolutely no other text*, formatting, labels (like "python"), or explanations before or after the list string.
+    *   **DO NOT USE BACKSLASHES.**
+
+**Example for DIFFERENT scores (do not copy these numbers):** "[75, 80, 85, 70, 65, 78]"
+
+**Based on the provided images, generate the required Python list string.**
 """,
-        'temperature': 0.3
+        'temperature': 0.0
     },
     'prompt5_language': {
         'text': """Determine the trainee's language levels (Dutch, French, English).
