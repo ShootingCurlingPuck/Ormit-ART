@@ -1,6 +1,6 @@
-        __pycache__/
-        build/
-        dist/
-        temp/
-        *.pyc
-        *.json # If you don't want JSON output files tracked
+ __pycache__/
+ build/
+dist/
+ temp/
+ *.pyc
+ *.json # If you don't want JSON output files tracked
