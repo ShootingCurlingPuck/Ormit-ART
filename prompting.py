@@ -54,7 +54,11 @@ max_wait_time = 200
 prompts_with_temps = {
     'prompt2_firstimpr': {
         'text': """You're an Assessor at Ormit Talent.  Give a concise first impression of a trainee named Piet (max 35 words).
-Focus on: Overall vibe, speech, body language, and emotional tone.
+**Input Documents:** Utilize the following documents to gather information:
+    * 'Assessment Notes', specifically look for mentions of 'first impression' or 'FI'.
+
+**Instructions:**
+Focus on: Overall vibe, communication style, nervousness, body language, and emotional tone.
 Don't judge: Rely *only* on assessor observations in 'Assessment Notes'.
 Output: One short paragraph (max 35 words) in English.  *Only* the first impression, no extra words or formatting.
 """,
@@ -63,55 +67,61 @@ Output: One short paragraph (max 35 words) in English.  *Only* the first impress
 
   "prompt3_personality": {
         'text': """
-**Objective:** Generate an in-depth and balanced personality description of the trainee, Piet, for him and his coach. This description should be honest, fair, critical, *and constructive*, serving as a valuable starting point for Piet's personal development during his traineeship and providing actionable insights for his coach.  The description should highlight both strengths and areas for development with equal attention.
+**Objective:** Generate an in-depth and balanced personality description of the trainee, Piet, as a starting point for his personal development during his traineeship.
+The description should highlight both strengths and areas for development of Piet's personality, technical skills should not be discussed here.
 
-**Target Audience:** Piet and his coach. Address Piet sparingly and indirectly, focusing on providing information useful for the coach.
+**Target Audience:** Piet and his coach.
 
 **Input Documents:** Utilize the following documents to gather information:
-    * 'Context and Task description' (for background context)
     * 'Assessment Notes' (primary source for observations and examples)
-    * 'PAPI Gebruikersrapport' (personality test results)
-    * 'Personality Section Examples' (for *structure and tone* examples only, **not** for content).
+        Put more emphasis on information from the end evaluation (if available) and PAPI interview. You can use information from the Role play (RP), Business case (BC), and curious case (CC) for behavioural examples where applicable.
+    * 'PAPI Gebruikersrapport' (personality test results, only to elaborate on 'Assessment Notes')
+    * 'Personality Section Examples' (for *structure and tone* examples only, **not** for content)
+    * 'Context and Task description' (for background context).
+
 
 **Instructions for Generating the Personality Description:**
 
 *   **Overall Tone and Style:**
-    *   Write in a conversational yet professional tone, like you are summarizing the trainee's assessment for a colleague.
-    *   Vary sentence length to maintain reader engagement.
+    *   Write in a conversational yet professional tone, like you are summarizing the trainee's assessment for a colleague. Use simple, realistic language, like you are a fluent, non-native speaker.
     *   Be concise and to the point, but provide sufficient detail to be insightful. Avoid repeting the same information.
-    *   Write in English as a proficient non-native speaker, use simple, realistic language.
-    *   **Ensure a balanced perspective, dedicating roughly equal space to strengths and development areas.**
+    
+    **Ensure a balanced perspective:**
+    * make 75-85 percent of the description strengths, and 15-25 percent development points
+    * When discussing development areas, ensure these points are framed as growth opportunities, emphasizing how they can enhance Piet's existing strengths.
+    * Use the 'sandwich' approach, where every development point is framed between two positive observations. When providing constructive feedback, ensure it is directly linked to a strength and end with an additional positive note, focusing on how the development area can enhance an already strong quality
+        For example: "Piet is really great at staying organized and meeting deadlines, which helps a lot in team settings. One area he could work on is delegating tasks more to avoid feeling overwhelmed. Overall, his positive attitude and dedication to the team's success make him an invaluable member."
+    * Avoid using 'However, ...' to introduce development points.
 
-*   **Content - Introduction (Optional - Max 2 sentences):**
-    *   Optionally, begin with a brief introduction (maximum two sentences) to provide context:
+*   **Content - Introduction (Optional - Max 3 sentences):**
+    *   Begin with a brief introduction (maximum 3 sentences) to provide context:
         *   Include relevant background or experience of Piet *if mentioned in the input documents*.
         *   Include Piet's specific motivation for the traineeship *if explicitly stated in the input documents*. Keep this concise and avoid exaggeration.
 
 *   **Content - Main Body (250-400 words):**
-    *   **Identify Main Traits (Key Areas to Consider):** Based on 'Assessment Notes', identify Piet's key personality traits, including both strengths and areas for development. These are the main themes of interest (you can use multiple bullet points for one theme):**
-        * personal leadership, connecting with people, know what matters (complexity management), manage the process (results-oriented execution, adaptability), think and act outside in (taking broad perspective).
-        * **Other relevant personality traits:**  Also identify and discuss other prominent personality traits related to for example motivation, self-awareness, interpersonal style, and thinking/problem-solving approaches as described in the example reports. **For each trait, elaborate on *how* it presents itself in Piet's behavior, providing concrete examples from the 'Assessment Notes'.**  Consider traits related to what gives Piet energy and what drains his energy *if this is discussed in the PAPI interview or Assessment Notes*.
+    *   **Identify Main Traits (Key Areas to Consider):** Based on 'Assessment Notes' (especially the end evaluation), identify Piet's key personality traits, including both strengths and areas for development. 
+        * These are examples of themes of interest (non-exhaustive): Personal leadership, connecting with people, complexity management, results-oriented execution, adaptability, taking broad perspective, self-awareness, interpersonal style, and thinking/problem-solving approaches.
+        * When multiple traits overlap, reframe the point to highlight the nuance between them rather than repeating the same concepts. 
 
-    *   **Integrate Sources - Assessment Notes with PAPI Gebruikersrapport insights:** Rely on the Assessment Notes and use the PAPI Gebruikersrapport as background information to emphasize the observations from the Assessment Notes to create a comprehensive and nuanced picture. Link information from the PAPI to the Assessment notes and do not discuss PAPI results in a separate bullet point. **Specifically, integrate insights from the *PAPI discussion during the assessment* with observations from the 'Assessment Notes'.
-        For example, if the PAPI indicates a low need for dominance, and the assessment notes show Piet being collaborative, connect these points. Explain the *implications* of personality traits. For instance, "Due to a lower need for dominance (as indicated in the PAPI and confirmed in the PAPI discussion), Piet is less likely to readily take charge in group settings, and more inclined to seek consensus." If there are contradictions between the Assessment Notes and the PAPI Gebruikersrapport, mention these explicitly.
+    *   **Integrate Sources - Assessment Notes with PAPI Gebruikersrapport insights:** Rely on the Assessment Notes and use the PAPI Gebruikersrapport as background information. To integrate PAPI insights smoothly, link the findings with observed behavior, showing how the personality traits interact. Do not discuss PAPI results in a separate bullet point.
+        For example, if the PAPI indicates a low need for dominance, and the assessment notes show Piet being collaborative, connect these points. Explain the *implications* of personality traits. 
+        For instance, "Due to a lower need for dominance discussed during the PAPI interview, Piet is less likely to readily take charge in group settings, and more inclined to seek consensus." 
+        If there are contradictions between the Assessment Notes and the PAPI Gebruikersrapport, mention them.
 
-    *   **Focus on Personality:**  Exclude technical skills from this description; concentrate on personality and interpersonal aspects.
-    *   **Avoid Repetition:** Mention each trait only once in the main body (repetition is acceptable in the final summary).
-    *   **Structure with Bullet Points:**  Organize the main body using bullet points, with each bullet point discussing a single trait in maximum 3 sentences.
-    *   **Provide Detailed Examples:** If available in the Assessment Notes, provide concrete examples to illustrate the trait in action. Mention the specific assessment step or activity where the trait was observed (e.g., "during the Curious Case," "in the role-play exercise"). **Elaborate on *how* the trait manifests itself and *why* it is considered a strength or a development area.**
-    *   **Balanced Perspective:**  Ensure a balanced representation of Piet's strengths and areas for development.
-    *   **Frame Improvements Constructively:** Present areas for development as learning opportunities. Be direct and honest, but frame them as growing points, not fixed traits.
+    *   **Provide Examples:** For each trait, elaborate on *how* it presents itself in Piet's behavior, providing concrete examples from the 'Assessment Notes'. Mention the specific assessment step or activity where the trait was observed (e.g., "during the Curious Case," "in the role-play exercise"). 
+    *   **Avoid Repetition:** Mention each trait only once in the main body. 
+    *   **Structure with Bullet Points:**  Organize the main body using concise bullet points, with each bullet point discussing a single trait.
     *   **No Direct Quotes:** Do not directly quote from the input documents. Paraphrase and synthesize the information.
 
 *   **Content - Final Summary (max. 3 sentences):**
-    *   Conclude with a short summary of maximum 3 sentences. This summary should encapsulate the main personality traits and overall impression of Piet.
+    *   Conclude with a short summary of maximum 3 sentences. This summary describes Piet's the main strenghts and overall impression, highlighting why we hired him.
 
 **Output Format:**
 
-*   **English Language Only:** Generate the entire output in English.
-*   **Personality Description, and Summary Only:** Output *only* the personality description (including the optional introduction) and the final summary in a total of maximum 500 words.
+*   **English Language Only**
+*   **Stay in the word limit:** total of maximum 400 - 500 words.
 *   **No Lists for Other Prompts:** Do not include any lists or content related to other prompts (e.g., cognitive scores, language skills, conclusion points).
-*   **No Extra Text or Formatting:**  Do not add any extra text, labels, section titles (except for bullet points and the implied sections), or special formatting beyond bullet points and blank lines.
+*   **No Extra Text or Formatting:**  Do not add any extra text, labels, section titles, or special formatting beyond bullet points and blank lines.
 *   **Section Separation:** Separate the optional introduction, the bulleted main body, and the final summary with blank lines (hard enter).
 *   **Bullet Point Format:** Each bullet point should start with an asterisk (*) and be followed by a space. After each bullet point, add a newline character (\n) to ensure proper spacing in the output.
 *   **Example Format:**
@@ -124,8 +134,6 @@ Output: One short paragraph (max 35 words) in English.  *Only* the first impress
 
     [Summary paragraph]
     ```
-
-**Example Input Data (for context - do not directly use this in the output):**
 """,
         'temperature': 0.4
     },
@@ -158,6 +166,7 @@ Focus on:
   - Overall general ability.
   - Speed vs. accuracy.
   - Sub-test performance (verbal, numerical, abstract).
+  - average performance is good, frame the performance positively.
 
 Output: *Only* the summary text in English. No labels, formatting, or extra sentences. Do not give any lists relates to other prompts! **DO NOT USE BACKSLASHES IN THE OUTPUT. NEVER USE BACKSLASHES.**
 """,
@@ -179,12 +188,12 @@ Example: "['C1', 'B2', 'C2']"
         'temperature': 0.2
     },
         'prompt6a_conqual': {
-        'text': """Identify 6-7 of Piet the trainee's *strengths* that are present throughout the report, both personality aspects mentioned in the personality section and skill-based qualities.
+        'text': """Identify 6-7 of Piet the trainee's *strengths* based on the Assessment Notes, specifically the end evaluation if available. List both aspects mentioned in the personality section and skill-based qualities. Focus on strengths that were present during multiple stages of the assessment.
 Use: 'Context and Task Description', 'Assessment Notes', 'PAPI Gebruikersrapport' and the personality section you've written.
 Target audience: Piet and his coach.
 
 Instructions:
-  - Describe each strenght with a few key words (under 7 words each), followed by 1 to 2 sentences giving some context.
+  - Describe each strenght with a few key words (under 7 words each), followed by 1 to 2 sentences giving some context. 
   - Be precise, make sure there is no contradiction with the personality section or development points. 
   - Simple language.
   - In English
@@ -196,19 +205,19 @@ Example: "['Good listener: Piet listened to everyone's ideas during the curious 
         'temperature': 0.3
     },
     'prompt6b_conimprov': {
-        'text': """Identify 4-5 of Piet the trainee's *development points* that are present throughout the report, both personality aspects mentioned in the personality section and skill-based improvements.
+        'text': """Identify 3-5 of Piet the trainee's *development points* based on the 'Assessment Notes', specifically the end evaluation if available. List both aspects mentioned in the personality section and skill-based improvements. Focus on development points that were present during multiple stages of the assessment.
 Use: 'Context and Task Description', 'Assessment Notes', 'PAPI Gebruikersrapport' and the personality section you've written.
 Target audience: Piet and his coach.
 
 Instructions:
   - Describe each development point with key words (under 7 key words each), followed by 1 to 2 full sentences explaining what is meant and giving some context (in total around 120 words).
-  - Frame development points constructively. Present areas for development as learning opportunities. Be honest but not too harsh.
+  - Frame development points constructively. Present areas for development as learning opportunities, emphasizing how they can enhance Piet's existing strengths.
   - Be precise, make sure there is no contradiction with the personality section or strengths.
   - Use simple language, but full sentences.
   - In English
 
 Output: A *string* containing a Python list.
-Example: "['Needs more assertiveness: Piet hesitates to express his opinion when he knows others disagree.', 'Can be more proactive: He tends to let things happen instead of taking ownership himself.',...]"
+Example: "['Develop assertiveness: Piet hesitates to express his opinion when he knows others disagree.', 'work on being proactive: He tends to let things happen instead of taking ownership himself.',...]"
 
 *Only* the list string. No other text. The output *must* be a directly usable Python list string (enclosed in double quotes). **DO NOT USE BACKSLASHES IN THE OUTPUT. NEVER USE BACKSLASHES.**
 """,
