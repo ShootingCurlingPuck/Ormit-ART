@@ -94,7 +94,7 @@ def _safe_add_paragraph(cell, text):
     if cell:
         paragraph = cell.add_paragraph(text)
         run = paragraph.runs[0]
-        run.font.name = 'Montserrat Light'
+        run.font.name = 'Montserrat'
         run.font.size = Pt(10)
 
         r = run._element
@@ -355,7 +355,7 @@ def split_paragraphs_and_apply_styles(doc):
 
                     if actual_para_obj:
                          for run in actual_para_obj.runs:
-                             run.font.name = 'Montserrat Light'
+                             run.font.name = 'Montserrat'
                              run.font.size = Pt(10)
                  except Exception as e:
                      print(f"Warning: Could not apply font to split paragraph: {e}")
@@ -486,14 +486,14 @@ def replace_and_format_header_text(doc, new_text):
             if '***' in paragraph.text:
                 paragraph.text = paragraph.text.replace('***', new_text)
                 for run in paragraph.runs:
-                    run.font.name = 'Montserrat SemiBold'
+                    run.font.name = 'Montserrat'
                     run.font.size = Pt(10)
                     run.font.color.rgb = RGBColor(*(0xED, 0x6B, 0x55))
                     run.bold = True
                     run.italic = False
                     rFonts = OxmlElement('w:rFonts')
-                    rFonts.set(qn('w:ascii'), 'Montserrat SemiBold')
-                    rFonts.set(qn('w:hAnsi'), 'Montserrat SemiBold')
+                    rFonts.set(qn('w:ascii'), 'Montserrat')
+                    rFonts.set(qn('w:hAnsi'), 'Montserrat')
                     run._element.rPr.append(rFonts)
 
 def clean_up(loc_dic):
@@ -561,14 +561,18 @@ def split_paragraphs_at_marker_and_style(doc):
             parts = para.text.split('<<BREAK>>')
             # The last part stays in the current paragraph (or is the only part if <<BREAK>> is at end)
             para.text = parts[-1].strip()
-            current_p_element = para._element # Reference point for inserting
+            current_p_element = para._element  # Reference point for inserting
 
-            # Apply style to this last part if needed
+            # Always treat this segment as the conclusion: Normal style, no bullet
+            para.style = 'Normal'
+            # Strip any leading bullet character if present
             if para.text.startswith('•'):
-                para.style = 'List Bullet'
-                para.text = para.text[1:].strip() # Remove bullet character
-            elif para.style.name.startswith('List Bullet'): # Ensure non-bullets don't keep bullet style
-                para.style = 'Normal'
+                para.text = para.text[1:].strip()
+
+            # Ensure consistent font and size for the last part
+            for run in para.runs:
+                run.font.name = 'Montserrat'
+                run.font.size = Pt(10)
 
             # Insert new paragraphs for the preceding parts *before* the current one (in reverse order)
             for part in reversed(parts[:-1]):
@@ -602,7 +606,7 @@ def split_paragraphs_at_marker_and_style(doc):
                     # Apply font within the run properties if needed
                     rPr_run = OxmlElement('w:rPr')
                     rFonts = OxmlElement('w:rFonts')
-                    rFonts.set(qn('w:ascii'), 'Montserrat Light'); rFonts.set(qn('w:hAnsi'), 'Montserrat Light')
+                    rFonts.set(qn('w:ascii'), 'Montserrat'); rFonts.set(qn('w:hAnsi'), 'Montserrat')
                     sz = OxmlElement('w:sz'); sz.set(qn('w:val'), '20') # Size in half-points (10pt = 20)
                     rPr_run.append(rFonts); rPr_run.append(sz)
                     run_element.append(rPr_run)

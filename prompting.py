@@ -9,6 +9,9 @@ import PyPDF2
 from docx import Document
 import ast
 
+# Set the default Gemini model for all prompts
+default_model = "gemini-2.5-flash-preview-04-17"
+
 def read_pdf(file_path):
     """Reads and returns text from a PDF file."""
     text = ""
@@ -131,7 +134,7 @@ The description should highlight both strengths and areas for development of Pie
     * First bullet point with trait description
     * Second bullet point with trait description
     * Third bullet point with trait description
-
+    \n -> new white line
     [Summary paragraph]
     ```
 """,
@@ -550,15 +553,13 @@ Specific Instructions:
                 print(f"Applied CRITICAL ICP info to prompt: {prom}")
 
         # Create model with specific temperature
-        # Select model based on prompt type
-        model_name = "gemini-2.0-flash" if prom in ['prompt4_cogcap_scores', 'prompt4_cogcap_remarks', 'prompt5_language'] else "gemini-2.5-pro-exp-03-25"
+        # Always use the default Gemini model
+        model_name = default_model
         
         model = genai.GenerativeModel(
             model_name=model_name,
             generation_config={"temperature": temperature}
         )
-        
-        print(f"Using model {model_name} for prompt: {prom}")
         
         # Construct the full prompt using the general context
         full_prompt = f"{final_prompt_text}\n\nUse the following files to complete the tasks. Do not give any output for this prompt.\n{general_context}"
@@ -672,15 +673,13 @@ Specific Instructions:
 {prompt_text}"""
                         print(f"Applied CRITICAL ICP info to RETRY prompt: {prom}")
 
-                # Select model based on prompt type for retries too
-                model_name = "gemini-2.0-flash" if prom in ['prompt4_cogcap_scores', 'prompt4_cogcap_remarks', 'prompt5_language'] else "gemini-2.5-pro-exp-03-25"
+                # Always use the default Gemini model on retries
+                model_name = default_model
                 
                 model = genai.GenerativeModel(
                     model_name=model_name, 
                     generation_config={"temperature": temperature}
                 )
-                
-                print(f"Using model {model_name} for RETRY prompt: {prom}")
                 
                 # Use general_context built earlier
                 full_prompt_retry = f"{final_prompt_text_retry}\n\nUse the following files to complete the tasks. Do not give any output for this prompt.\n{general_context}"

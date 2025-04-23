@@ -317,7 +317,7 @@ def add_icons_data_chief(doc, list_scores):
                 cell = _safe_get_cell(table, row_no, 0)
                 if cell and cell.text.strip().startswith("AA"):
                     run = cell.paragraphs[0].add_run("N/A")
-                    run.font.name = 'Montserrat Light'
+                    run.font.name = 'Montserrat'
                     run.font.size = Pt(9)
 
 def add_icons_data_chief_2(doc, list_scores):
@@ -344,7 +344,7 @@ def add_icons_data_chief_2(doc, list_scores):
                 cell = _safe_get_cell(table, row_no, 0)
                 if cell and cell.text.strip().startswith("AA"):
                     run = cell.paragraphs[0].add_run("N/A")
-                    run.font.name = 'Montserrat Light'
+                    run.font.name = 'Montserrat'
                     run.font.size = Pt(9)
 
 def add_icons_data_tools(doc, list_scores):
@@ -395,14 +395,14 @@ def add_icon_to_cell(cell, score):
             # If it's N/A or cannot be converted, use a default icon or text
             print(f"Warning: Non-integer score encountered: {score}. Using N/A.")
             run = cell.paragraphs[0].add_run("N/A")
-            run.font.name = 'Montserrat Light'
+            run.font.name = 'Montserrat'
             run.font.size = Pt(9)
             return
 
     # Special handling for None (our placeholder for N/A)
     if score is None:
         run = cell.paragraphs[0].add_run("N/A")
-        run.font.name = 'Montserrat Light'
+        run.font.name = 'Montserrat'
         run.font.size = Pt(9)
         return
         
@@ -501,7 +501,7 @@ def replace_and_format_header_text(doc, new_text):
             if '***' in paragraph.text:
                 paragraph.text = paragraph.text.replace('***', new_text)
                 for run in paragraph.runs:
-                    run.font.name = 'Montserrat SemiBold'
+                    run.font.name = 'Montserrat'
                     run.font.size = Pt(10)
                     run.font.color.rgb = RGBColor(*(0xED, 0x6B, 0x55))
                     run.bold = True
@@ -640,6 +640,6 @@ def update_language_skills_table(doc, language_levels):
                     _safe_set_text(cell, "")
                     para = cell.paragraphs[0]
                     run = para.add_run(cell_text)
-                    run.font.name = 'Montserrat Light'
+                    run.font.name = 'Montserrat'
                     run.font.size = Pt(9)
                     run.font.color.rgb = RGBColor(150, 150, 150)  # Light gray
