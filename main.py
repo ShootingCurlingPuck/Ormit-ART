@@ -175,7 +175,7 @@ class MainWindow(QWidget):
                 padding: 1px;
                 min-width: 18px;
                 min-height: 18px;
-                max-width: 22px;
+                max-width: 16px;
                 max-height: 22px;
             }
             QCheckBox:hover {
