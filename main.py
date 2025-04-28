@@ -189,7 +189,7 @@ class MainWindow(QWidget):
         """)
         thinking_layout.addWidget(self.enable_thinking_checkbox)
         
-        # Add tooltip icon
+        # Add tooltip icon with simple hover functionality
         tooltip_label = QLabel("?")
         tooltip_label.setStyleSheet("""
             QLabel {
@@ -204,6 +204,8 @@ class MainWindow(QWidget):
         """)
         tooltip_label.setToolTip("""Pros: Higher quality, more detailed.
 Cons: Slower response, higher cost.""")
+        # Use standard help cursor for better tooltip behavior
+        tooltip_label.setCursor(Qt.CursorShape.WhatsThisCursor)
         thinking_layout.addWidget(tooltip_label)
         
         # Add the horizontal layout to the main grid

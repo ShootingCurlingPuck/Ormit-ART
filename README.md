@@ -94,6 +94,5 @@ The application generates two main outputs in the `output_reports` directory:
 - Templates are stored in the resources directory
 - Temporary files are created in the temp directory
 - Output files are saved to the output_reports directory 
-=======
-- Output files are saved to the output_reports directory
+
 

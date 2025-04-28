@@ -736,7 +736,7 @@ Specific Instructions:
                     # Don't update results[prom] here as we want to keep the best result so far
 
             # After all retries, check final result
-            if results[prom] == "" or results[prom] == "[]":
+            if prom in results and (results[prom] == "" or results[prom] == "[]"):
                 print(f"Error: Critical prompt '{prom}' still empty after all attempts.")
                 
     # --- End Retry Logic ---
@@ -751,36 +751,71 @@ Specific Instructions:
             formatted_parts = []
             first_point = True
 
-            for line in lines:
+            # Check for summary indicators
+            summary_indicators = ["in summary", "to summarize", "overall", "in conclusion", 
+                              "to conclude", "in short", "is a promising", "makes him a promising", 
+                              "makes her a promising", "these qualities make"]
+
+            for i, line in enumerate(lines):
                 stripped_line = line.strip()
                 is_bullet = stripped_line.startswith('*') or stripped_line.startswith('•')
-                # Simple check for summary paragraph
-                is_summary = "In summary" in stripped_line or "To summarize" in stripped_line
-
-                if is_bullet:
+                
+                # Improved summary detection - check for various indicators
+                is_summary = False
+                lower_line = stripped_line.lower()
+                
+                # Check if this is the last paragraph/bullet (likely to be summary)
+                is_last_content = (i == len(lines) - 1 or all(not l.strip() for l in lines[i+1:]))
+                
+                # Check if this contains any summary indicators
+                for indicator in summary_indicators:
+                    if indicator in lower_line:
+                        is_summary = True
+                        break
+                
+                # Special handling for last bullet that looks like a summary
+                if is_bullet and (is_summary or is_last_content):
                     content = stripped_line[1:].strip()
                     if first_point:
                         # First point's text goes directly after the template bullet
                         formatted_parts.append(content)
                         first_point = False
                     else:
-                        # Add an extra break before summary if it's a bullet point
-                        if is_summary:
-                            formatted_parts.append("<<BREAK>>")
-                            formatted_parts.append("<<BREAK>>")
-                        else:
-                            formatted_parts.append("<<BREAK>>")
-                        formatted_parts.append(f"• {content}") # Add bullet here
+                        # Add TWO extra breaks for the summary bullet point
+                        formatted_parts.append("<<BREAK>>")
+                        formatted_parts.append("<<BREAK>>")
+                        formatted_parts.append(f"• {content}")
+                
+                # Regular bullet handling (no change to existing logic)
+                elif is_bullet:
+                    content = stripped_line[1:].strip()
+                    if first_point:
+                        # First point's text goes directly after the template bullet
+                        formatted_parts.append(content)
+                        first_point = False
+                    else:
+                        formatted_parts.append("<<BREAK>>")
+                        formatted_parts.append(f"• {content}")
+                
+                # Non-bullet text that looks like a summary
+                elif stripped_line and not first_point and (is_summary or is_last_content):
+                    # Add extra breaks for non-bullet summary paragraph
+                    if formatted_parts and not formatted_parts[-1] == "<<BREAK>>":
+                        formatted_parts.append("<<BREAK>>")
+                        formatted_parts.append("<<BREAK>>")
+                    formatted_parts.append(stripped_line)
+                
+                # Regular text handling (no change)
                 elif stripped_line and not first_point:
-                     # Handle intro/summary lines *after* the first bullet
-                     # Add break before non-bullet lines if needed
-                     if formatted_parts and not formatted_parts[-1] == "<<BREAK>>":
-                          formatted_parts.append("<<BREAK>>")
-                     formatted_parts.append(stripped_line) # Add the non-bullet line
+                    # Handle intro/summary lines *after* the first bullet
+                    # Add break before non-bullet lines if needed
+                    if formatted_parts and not formatted_parts[-1] == "<<BREAK>>":
+                        formatted_parts.append("<<BREAK>>")
+                    formatted_parts.append(stripped_line)
                 elif stripped_line and first_point:
-                     # Handle intro line *before* any bullets
-                     formatted_parts.append(stripped_line)
-                     # Don't set first_point = False yet, wait for actual bullet
+                    # Handle intro line *before* any bullets
+                    formatted_parts.append(stripped_line)
+                    # Don't set first_point = False yet, wait for actual bullet
 
             # Join parts, <<BREAK>> will be handled later
             # We join with a space just to ensure parts are concatenated.

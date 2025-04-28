@@ -366,13 +366,51 @@ def conclusion(doc, column, list_items):
         # Clear existing content first
         _safe_set_text(cell, "")
 
-        # Add each item as a separate paragraph with bullet formatting
+        # Add each item as a separate paragraph with improved bullet formatting
         for point in list_items:
-            if isinstance(point, str):
-                # Add pseudo-bullet for visual consistency within the table cell
-                _safe_add_paragraph(cell, f'•  {point}')
-            elif point:
-                _safe_add_paragraph(cell, f'•  {str(point)}')
+            if isinstance(point, str) or point:
+                # Create paragraph with manual bullet
+                paragraph = cell.add_paragraph()
+                
+                # Try to use List Bullet style if available, but don't fail if it's not
+                try:
+                    # Check if style exists in the document
+                    if 'List Bullet' in doc.styles:
+                        paragraph.style = 'List Bullet'
+                    else:
+                        # Manual bullet as fallback
+                        paragraph.text = "• "
+                        # Style the manual bullet
+                        for run in paragraph.runs:
+                            run.font.name = 'Montserrat'
+                            run.font.size = Pt(10)
+                            run.bold = True
+                except Exception as e:
+                    print(f"Warning: Could not apply bullet style: {e}")
+                    # Ensure paragraph has a bullet character
+                    if not paragraph.text.startswith('•'):
+                        paragraph.text = "• "
+                
+                # Add the content after the bullet (or after applying style)
+                content_text = str(point) if point else ""
+                if paragraph.text.startswith('•'):
+                    # If we have a manual bullet, add content as a separate run
+                    run = paragraph.add_run(content_text)
+                else:
+                    # Otherwise create a new run with the content
+                    run = paragraph.add_run(content_text)
+                
+                # Apply consistent font formatting
+                run.font.name = 'Montserrat'
+                run.font.size = Pt(10)
+                
+                # Add proper XML formatting for consistent font appearance
+                r = run._element
+                rPr = r.get_or_add_rPr()
+                rFonts = OxmlElement('w:rFonts')
+                rFonts.set(qn('w:ascii'), 'Montserrat')
+                rFonts.set(qn('w:hAnsi'), 'Montserrat')
+                rPr.append(rFonts)
 
     except IndexError:
         print(f"Warning: Could not access cell (1, {column}) in conclusion table")
