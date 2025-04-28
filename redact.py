@@ -57,25 +57,15 @@ class Redactor:
                         print(f"  Found '{name_to_redact}' {len(sensitive_areas)} times on page {page.number}")
                         changes += len(sensitive_areas)
                         for quad in sensitive_areas:
-                            page.add_redact_annot(quad, fill=(0, 0, 0)) # Black fill
-
-                     # --- Redact individual parts (first name, last name) if name has parts ---
-                     # Be cautious with common first names - might over-redact
-                     # Add more specific logic here if needed based on requirements
-                     # For now, let's skip redacting individual parts to be safe
-                     # if len(name_parts) > 1:
-                     #     for part in name_parts:
-                     #         if len(part) > 2: # Avoid redacting very short parts like initials
-                     #             part_areas = page.search_for(part, quads=True)
-                     #             # Add checks here to avoid redacting common words if 'part' is common
-                     #             # ...
-                     #             for quad in part_areas:
-                     #                  page.add_redact_annot(quad, fill=(0, 0, 0))
-                     #                  changes += 1
-
+                            # Create a solid black rectangle for redaction
+                            # Set text color to white (invisible against black) and fill color to black
+                            annot = page.add_redact_annot(quad, text=" ", fill=(0, 0, 0), text_color=(1, 1, 1))
+                            # Ensure we have proper settings for solid appearance
+                            annot.set_border(width=0)  # No border
+                            annot.set_opacity(1.0)     # Fully opaque
 
                 # Apply the redactions for the current page
-            page.apply_redactions()
+                page.apply_redactions()
 
             if changes > 0:
                 # Save the redacted file, overwriting the original in the temp folder
