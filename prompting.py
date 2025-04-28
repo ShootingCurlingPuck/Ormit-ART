@@ -1,4 +1,4 @@
-import google.generativeai as genai
+from google import genai
 import time
 from datetime import datetime
 import json
@@ -413,7 +413,19 @@ def send_prompts(data):
     global_signals.update_message.emit("Connecting to Gemini...")
 
     GOOGLE_API_KEY = data["Gemini Key"]
-    genai.configure(api_key=GOOGLE_API_KEY)
+    # Create client with API key
+    client = genai.Client(api_key=GOOGLE_API_KEY)
+    
+    # Get the thinking setting from GUI data
+    enable_thinking = data.get("Enable Thinking", False)
+    # Define which prompts should use thinking when enabled
+    thinking_prompts = [
+        'prompt3_personality', 
+        'prompt6a_conqual', 
+        'prompt6b_conimprov', 
+        'prompt7_qualscore', 
+        'prompt7_qualscore_data'
+    ]
     
     current_time = datetime.now()
     formatted_time = current_time.strftime("%m%d%H%M")
@@ -552,14 +564,19 @@ Specific Instructions:
 {prompt_text}"""
                 print(f"Applied CRITICAL ICP info to prompt: {prom}")
 
-        # Create model with specific temperature
-        # Always use the default Gemini model
-        model_name = default_model
+        # Prepare generation config with temperature
+        generation_config = {"temperature": temperature}
         
-        model = genai.GenerativeModel(
-            model_name=model_name,
-            generation_config={"temperature": temperature}
-        )
+        # Add thinking configuration if enabled and this prompt should use thinking
+        if enable_thinking and prom in thinking_prompts:
+            # Use the thinking_config parameter when enabled
+            generation_config = {
+                "temperature": temperature,
+                "thinking_config": {
+                    "thinking_budget": 8096
+                }
+            }
+            global_signals.update_message.emit(f"Using AI thinking for prompt {promno} ({prom})...")
         
         # Construct the full prompt using the general context
         full_prompt = f"{final_prompt_text}\n\nUse the following files to complete the tasks. Do not give any output for this prompt.\n{general_context}"
@@ -576,7 +593,11 @@ Specific Instructions:
                     # Add a short delay between retry attempts to avoid hammering the API
                     time.sleep(1)
                     
-                response = model.generate_content(full_prompt)
+                response = client.models.generate_content(
+                    model=default_model,
+                    contents=full_prompt,
+                    config=generation_config
+                )
                 output_text = response.text
 
                 # Check if we got a valid response
@@ -673,19 +694,29 @@ Specific Instructions:
 {prompt_text}"""
                         print(f"Applied CRITICAL ICP info to RETRY prompt: {prom}")
 
-                # Always use the default Gemini model on retries
-                model_name = default_model
+                # Prepare generation config with temperature
+                generation_config = {"temperature": temperature}
                 
-                model = genai.GenerativeModel(
-                    model_name=model_name, 
-                    generation_config={"temperature": temperature}
-                )
+                # Add thinking configuration if enabled and this prompt should use thinking
+                if enable_thinking and prom in thinking_prompts:
+                    # Use the thinking_config parameter when enabled
+                    generation_config = {
+                        "temperature": temperature,
+                        "thinking_config": {
+                            "thinking_budget": 8096
+                        }
+                    }
+                    global_signals.update_message.emit(f"Using AI thinking for prompt {promno} ({prom})...")
                 
                 # Use general_context built earlier
                 full_prompt_retry = f"{final_prompt_text_retry}\n\nUse the following files to complete the tasks. Do not give any output for this prompt.\n{general_context}"
                 
                 try:
-                    response = model.generate_content(full_prompt_retry)
+                    response = client.models.generate_content(
+                        model=default_model,
+                        contents=full_prompt_retry,
+                        config=generation_config
+                    )
                     output_text_retry = response.text
 
                     if prom in list_output_prompts:

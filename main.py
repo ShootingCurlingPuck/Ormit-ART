@@ -4,13 +4,14 @@ import traceback
 from PyQt6.QtCore import QThread, pyqtSignal
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (QApplication, QWidget, QPushButton, QLineEdit, QLabel,
-                             QGridLayout, QFileDialog, QComboBox, QMessageBox)
+                             QGridLayout, QFileDialog, QComboBox, QMessageBox, QCheckBox, QHBoxLayout)
 from PyQt6.QtGui import QPixmap, QFont, QIcon
 from redact import *
-from prompting import * 
+from prompting import *
 from time import sleep
 from global_signals import global_signals
 from report_utils import clean_up, resource_path
+import stat
 
 # Import write_report modules (MCP and DATA)
 import write_report_mcp as mcp_write_report
@@ -81,6 +82,8 @@ class ProcessingThread(QThread):
             global_signals.update_message.emit(f"Error: {str(e)}")
 
 class MainWindow(QWidget):
+    KEY_FILE = os.path.expanduser("~/.ormit_gemini_key")
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setWindowTitle("ORMIT - Draft Assessment Report v1.0")
@@ -124,6 +127,8 @@ class MainWindow(QWidget):
         layout.addWidget(self.key_label, 1, 0)
 
         self.openai_key_input = QLineEdit(placeholderText='Enter Gemini Key: ***************')
+        # Load saved key if available
+        self._load_saved_key()
         layout.addWidget(self.openai_key_input, 1, 1, 1, 2)
 
         # Applicant information
@@ -153,16 +158,67 @@ class MainWindow(QWidget):
         self.gender_combo.setToolTip('Select a gender')
         layout.addWidget(self.gender_combo, 4, 1)
 
+        # Enable Thinking checkbox
+        self.enable_thinking_label = QLabel('Enable AI Thinking:')
+        self.enable_thinking_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        layout.addWidget(self.enable_thinking_label, 5, 0)
+        
+        # Create a horizontal layout for the checkbox and tooltip
+        thinking_layout = QHBoxLayout()
+        
+        self.enable_thinking_checkbox = QCheckBox(self)
+        self.enable_thinking_checkbox.setStyleSheet("""
+            QCheckBox {
+                background-color: #f0f0f0;
+                border: 1px solid #999999;
+                border-radius: 3px;
+                padding: 1px;
+                min-width: 18px;
+                min-height: 18px;
+                max-width: 22px;
+                max-height: 22px;
+            }
+            QCheckBox:hover {
+                background-color: #e0e0e0;
+                border-color: #666666;
+            }
+            QCheckBox:checked {
+                background-color: #f0f0f0;
+                border-color: #999999;
+            }
+        """)
+        thinking_layout.addWidget(self.enable_thinking_checkbox)
+        
+        # Add tooltip icon
+        tooltip_label = QLabel("?")
+        tooltip_label.setStyleSheet("""
+            QLabel {
+                color: #666666;
+                font-weight: bold;
+                font-size: 12px;
+                padding: 2px;
+            }
+            QLabel:hover {
+                color: #000000;
+            }
+        """)
+        tooltip_label.setToolTip("""Pros: Higher quality, more detailed.
+Cons: Slower response, higher cost.""")
+        thinking_layout.addWidget(tooltip_label)
+        
+        # Add the horizontal layout to the main grid
+        layout.addLayout(thinking_layout, 5, 1)
+
         # Select Traineeship
         self.program_label = QLabel('Traineeship:')
         self.program_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        layout.addWidget(self.program_label, 5, 0)
+        layout.addWidget(self.program_label, 6, 0)
 
         self.program_combo = QComboBox(self)
         for i in programs:
             self.program_combo.addItem(i)
         self.program_combo.setToolTip('Select a traineeship')
-        layout.addWidget(self.program_combo, 5, 1)
+        layout.addWidget(self.program_combo, 6, 1)
 
         # Document labels
         self.file_label1 = QLabel("No file selected", self)
@@ -173,58 +229,58 @@ class MainWindow(QWidget):
         self.selected_files = {}
         self.file_browser_btn1 = QPushButton('PAPI Gebruikersrapport')
         self.file_browser_btn1.clicked.connect(lambda: self.open_file_dialog(1))
-        layout.addWidget(self.file_browser_btn1, 6, 0)
-        layout.addWidget(self.file_label1, 6, 1, 1, 2)
+        layout.addWidget(self.file_browser_btn1, 7, 0)
+        layout.addWidget(self.file_label1, 7, 1, 1, 2)
 
         self.file_browser_btn2 = QPushButton('Cog. Test')
         self.file_browser_btn2.clicked.connect(lambda: self.open_file_dialog(2))
-        layout.addWidget(self.file_browser_btn2, 7, 0)
-        layout.addWidget(self.file_label2, 7, 1, 1, 2)
+        layout.addWidget(self.file_browser_btn2, 8, 0)
+        layout.addWidget(self.file_label2, 8, 1, 1, 2)
 
         self.file_browser_btn3 = QPushButton('Assessment Notes')
         self.file_browser_btn3.clicked.connect(lambda: self.open_file_dialog(3))
-        layout.addWidget(self.file_browser_btn3, 8, 0)
-        layout.addWidget(self.file_label3, 8, 1, 1, 2)
+        layout.addWidget(self.file_browser_btn3, 9, 0)
+        layout.addWidget(self.file_label3, 9, 1, 1, 2)
 
         # ICP Info for Prompt 3 (Personality)
         self.icp_info_prompt3_label = QLabel('ICP Info (Personality):')
         self.icp_info_prompt3_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         self.icp_info_prompt3_label.setVisible(False)
-        layout.addWidget(self.icp_info_prompt3_label, 9, 0)
+        layout.addWidget(self.icp_info_prompt3_label, 10, 0)
 
         self.icp_info_prompt3_input = QLineEdit(placeholderText='Optional: Specific instructions/context for Prompt 3')
         self.icp_info_prompt3_input.setVisible(False)
-        layout.addWidget(self.icp_info_prompt3_input, 9, 1, 1, 2)
+        layout.addWidget(self.icp_info_prompt3_input, 10, 1, 1, 2)
 
         # ICP Info for Prompt 6a (Strengths)
         self.icp_info_prompt6a_label = QLabel('ICP Info (Strengths):')
         self.icp_info_prompt6a_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         self.icp_info_prompt6a_label.setVisible(False)
-        layout.addWidget(self.icp_info_prompt6a_label, 10, 0)
+        layout.addWidget(self.icp_info_prompt6a_label, 11, 0)
 
         self.icp_info_prompt6a_input = QLineEdit(placeholderText='Optional: Specific instructions/context for Prompt 6a')
         self.icp_info_prompt6a_input.setVisible(False)
-        layout.addWidget(self.icp_info_prompt6a_input, 10, 1, 1, 2)
+        layout.addWidget(self.icp_info_prompt6a_input, 11, 1, 1, 2)
 
         # ICP Info for Prompt 6b (Improvements)
         self.icp_info_prompt6b_label = QLabel('ICP Info (Improvements):')
         self.icp_info_prompt6b_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         self.icp_info_prompt6b_label.setVisible(False)
-        layout.addWidget(self.icp_info_prompt6b_label, 11, 0)
+        layout.addWidget(self.icp_info_prompt6b_label, 12, 0)
 
         self.icp_info_prompt6b_input = QLineEdit(placeholderText='Optional: Specific instructions/context for Prompt 6b')
         self.icp_info_prompt6b_input.setVisible(False)
-        layout.addWidget(self.icp_info_prompt6b_input, 11, 1, 1, 2)
+        layout.addWidget(self.icp_info_prompt6b_input, 12, 1, 1, 2)
 
         # ICP Description File Button/Label
         self.icp_desc_button = QPushButton('ICP Description File')
         self.icp_desc_button.setVisible(False)
         self.icp_desc_button.clicked.connect(lambda: self.open_file_dialog(4))
-        layout.addWidget(self.icp_desc_button, 12, 0)
+        layout.addWidget(self.icp_desc_button, 13, 0)
 
         self.icp_desc_label = QLabel("No file selected (Required for ICP)", self)
         self.icp_desc_label.setVisible(False)
-        layout.addWidget(self.icp_desc_label, 12, 1, 1, 2)
+        layout.addWidget(self.icp_desc_label, 13, 1, 1, 2)
 
         # Connect program selection change signal AFTER ICP widgets are created
         self.program_combo.currentIndexChanged.connect(self.handle_program_change)
@@ -233,7 +289,7 @@ class MainWindow(QWidget):
         self.submitbtn = QPushButton('Submit')
         self.submitbtn.setFixedWidth(90)
         self.submitbtn.hide()
-        layout.addWidget(self.submitbtn, 13, 2, Qt.AlignmentFlag.AlignRight)
+        layout.addWidget(self.submitbtn, 14, 2, Qt.AlignmentFlag.AlignRight)
         self.submitbtn.clicked.connect(self.handle_submit)
 
         # Initialize UI based on default selection
@@ -305,11 +361,37 @@ class MainWindow(QWidget):
                     self.submitbtn.show()
                 # Submit button remains hidden otherwise
 
+    def _load_saved_key(self):
+        try:
+            if os.path.exists(self.KEY_FILE):
+                with open(self.KEY_FILE, 'r') as f:
+                    key = f.read().strip()
+                    if key:
+                        self.openai_key_input.setText(key)
+        except Exception as e:
+            print(f"Warning: Could not load saved Gemini key: {e}")
+
+    def _save_key(self, key):
+        try:
+            with open(self.KEY_FILE, 'w') as f:
+                f.write(key.strip())
+            # Set file permissions to user read/write only (if possible)
+            try:
+                os.chmod(self.KEY_FILE, stat.S_IRUSR | stat.S_IWUSR)
+            except Exception:
+                pass
+        except Exception as e:
+            print(f"Warning: Could not save Gemini key: {e}")
+
     def handle_submit(self):
         # Validate input
         if not self.openai_key_input.text().strip():
             QMessageBox.warning(self, "Missing Input", "Please enter a Gemini API key.")
             return
+        # Save the key if changed
+        current_key = self.openai_key_input.text().strip()
+        if not os.path.exists(self.KEY_FILE) or open(self.KEY_FILE).read().strip() != current_key:
+            self._save_key(current_key)
             
         if not self.applicant_name_input.text().strip():
             QMessageBox.warning(self, "Missing Input", "Please enter the applicant's name.")
@@ -336,7 +418,8 @@ class MainWindow(QWidget):
             "Assessor Name": self.assessor_name_input.text(),
             "Gender": self.gender_combo.currentText(),
             "Traineeship": selected_program,
-            "Files": self.selected_files.copy()
+            "Files": self.selected_files.copy(),
+            "Enable Thinking": self.enable_thinking_checkbox.isChecked()
         }
 
         # Add ICP-specific data and validation
@@ -373,4 +456,3 @@ if __name__ == '__main__':
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
-    main()

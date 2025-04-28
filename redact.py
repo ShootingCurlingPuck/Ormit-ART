@@ -75,7 +75,7 @@ class Redactor:
 
 
                 # Apply the redactions for the current page
-                page.apply_redactions()
+            page.apply_redactions()
 
             if changes > 0:
                 # Save the redacted file, overwriting the original in the temp folder
