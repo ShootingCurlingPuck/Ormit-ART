@@ -10,7 +10,7 @@ from docx import Document
 import ast
 
 # Set the default Gemini model for all prompts
-default_model = "gemini-2.5-flash-latest"
+default_model = "gemini-2.5-flash-preview-04-17"
 
 def read_pdf(file_path):
     """Reads and returns text from a PDF file."""
