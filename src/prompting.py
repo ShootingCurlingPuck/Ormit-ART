@@ -8,6 +8,10 @@ from datetime import datetime
 import pypdf as PyPDF2
 from docx import Document
 from google import genai
+from google.genai import types as genai_types
+
+from constants import Program
+from data_models import GuiData, IcpGuiData
 
 from .global_signals import global_signals
 
@@ -60,7 +64,7 @@ def _extract_list_from_string(text):
 max_wait_time = 200
 
 # Dictionary containing prompts with their respective temperatures
-prompts_with_temps = {
+prompts_with_temps: dict[str, dict[str, str | float]] = {
     "prompt2_firstimpr": {
         "text": """You're an Assessor at Ormit Talent.  Give a concise first impression of a trainee named Piet (max 35 words).
 **Input Documents:** Utilize the following documents to gather information:
@@ -411,15 +415,15 @@ Example with no interests: "["N/A"]"
 }
 
 
-def send_prompts(data):
+def send_prompts(data: GuiData | IcpGuiData) -> str:
     global_signals.update_message.emit("Connecting to Gemini...")
 
-    GOOGLE_API_KEY = data["Gemini Key"]
+    GOOGLE_API_KEY = data["gemini_key"]
     # Create client with API key
     client = genai.Client(api_key=GOOGLE_API_KEY)
 
     # Get the thinking setting from GUI data
-    enable_thinking = data.get("Enable Thinking", False)
+    enable_thinking = data["enable_thinking"]
     # Define which prompts should use thinking when enabled
     thinking_prompts = [
         "prompt3_personality",
@@ -431,7 +435,7 @@ def send_prompts(data):
 
     current_time = datetime.now()
     formatted_time = current_time.strftime("%m%d%H%M")
-    appl_name = data["Applicant Name"]
+    appl_name = data["applicant_name"]
     # Update to save to output_reports directory
     output_dir = "output_reports"
     # Create the output directory if it doesn't exist
@@ -458,14 +462,14 @@ def send_prompts(data):
         path_to_toneofvoice,
     ]
 
-    selected_program = data["Traineeship"]
+    selected_program = data["traineeship"]
     # Use MCP profile for both MCP and NEW programs
-    if selected_program == "DATA":
+    if selected_program == Program.DATA:
         lst_files.append(path_to_dataprofile)
     else:  # Handles MCP, NEW, and any potential unknown as MCP
         lst_files.append(path_to_mcpprofile)
 
-    file_contents = {}
+    file_contents: dict[str, str] = {}
     for file_path in lst_files:
         file_name = os.path.basename(file_path)
         if file_path.endswith(".pdf"):
@@ -478,7 +482,7 @@ def send_prompts(data):
 
     # --- Read ICP Description File (if applicable) --- Append to file_contents
     icp_description_content = ""
-    if selected_program == "ICP":
+    if selected_program == Program.ICP:
         icp_file_path = data.get("Files", {}).get("ICP Description")  # Safer get
         if icp_file_path and os.path.exists(icp_file_path):
             try:
@@ -499,13 +503,9 @@ def send_prompts(data):
             # Don't add to file_contents if missing
 
     # --- Get ICP Specific Prompt Info --- (Store them for use in the loop)
-    icp_info_p3 = data.get("ICP_Info_Prompt3", "") if selected_program == "ICP" else ""
-    icp_info_p6a = (
-        data.get("ICP_Info_Prompt6a", "") if selected_program == "ICP" else ""
-    )
-    icp_info_p6b = (
-        data.get("ICP_Info_Prompt6b", "") if selected_program == "ICP" else ""
-    )
+    icp_info_p3 = data.get("icp_info_prompt3", "")
+    icp_info_p6a = data.get("icp_info_prompt6a", "")
+    icp_info_p6b = data.get("icp_info_prompt6b", "")
 
     global_signals.update_message.emit("Files uploaded, starting prompts...")
 
@@ -537,7 +537,7 @@ def send_prompts(data):
 
     # --- Select appropriate list of prompts ---
     # Use MCP prompts for both MCP and NEW programs
-    if selected_program == "DATA":
+    if selected_program == Program.DATA:
         lst_prompts = lst_prompts_data
     else:  # Handles MCP, NEW, and any potential unknown as MCP
         lst_prompts = lst_prompts_mcp
@@ -561,13 +561,13 @@ def send_prompts(data):
 
         prompt_data = prompts_with_temps[prom]
         prompt_text = prompt_data["text"]
-        temperature = prompt_data["temperature"]
+        temperature = float(prompt_data["temperature"])
 
         # --- Inject SPECIFIC ICP Info with HIGH EMPHASIS ---
         final_prompt_text = prompt_text
         icp_instruction = ""
 
-        if selected_program == "ICP":
+        if selected_program == Program.ICP:
             if prom == "prompt3_personality" and icp_info_p3:
                 icp_instruction = icp_info_p3
             elif prom == "prompt6a_conqual" and icp_info_p6a:
@@ -595,7 +595,9 @@ Specific Instructions:
                 print(f"Applied CRITICAL ICP info to prompt: {prom}")
 
         # Prepare generation config with temperature
-        generation_config = {"temperature": temperature}
+        generation_config: genai_types.GenerateContentConfigOrDict = {
+            "temperature": temperature
+        }
 
         # Add thinking configuration if enabled and this prompt should use thinking
         if enable_thinking and prom in thinking_prompts:
@@ -641,7 +643,7 @@ Specific Instructions:
                             f"Warning: Empty list result for prompt '{prom}' on attempt {attempt + 1}."
                         )
                 else:
-                    if output_text.strip():
+                    if output_text is not None and output_text.strip():
                         results[prom] = output_text.strip()
                         success = True
                     else:
@@ -653,7 +655,7 @@ Specific Instructions:
                 if not success and attempt == max_attempts - 1:
                     if prom in list_output_prompts:
                         results[prom] = _extract_list_from_string(output_text)
-                    else:
+                    elif output_text is not None:
                         results[prom] = output_text.strip()
                     print(
                         f"Warning: Using potentially empty result for '{prom}' after {max_attempts} attempts."
@@ -676,7 +678,7 @@ Specific Instructions:
     # This provides additional retries for specific critical prompts
     critical_prompts = ["prompt6b_conimprov"]
     # Use MCP critical prompt for both MCP and NEW
-    if selected_program == "DATA":
+    if selected_program == Program.DATA:
         critical_prompts.append("prompt7_qualscore_data")
     else:  # Handles MCP, NEW, and any potential unknown as MCP
         critical_prompts.append("prompt7_qualscore")
@@ -702,13 +704,13 @@ Specific Instructions:
                 # Reuse prompt details from initial run
                 prompt_data = prompts_with_temps[prom]
                 prompt_text = prompt_data["text"]
-                temperature = prompt_data["temperature"]
+                temperature = float(prompt_data["temperature"])
 
                 # --- Inject SPECIFIC ICP Info for RETRY with HIGH EMPHASIS ---
                 final_prompt_text_retry = prompt_text
                 icp_instruction_retry = ""  # Reset for retry
 
-                if selected_program == "ICP":
+                if selected_program == Program.ICP:
                     # Check which specific prompt it is and get the corresponding info
                     if prom == "prompt3_personality" and icp_info_p3:  # Use stored info
                         icp_instruction_retry = icp_info_p3
@@ -741,7 +743,9 @@ Specific Instructions:
                         print(f"Applied CRITICAL ICP info to RETRY prompt: {prom}")
 
                 # Prepare generation config with temperature
-                generation_config = {"temperature": temperature}
+                generation_config: genai_types.GenerateContentConfigOrDict = {
+                    "temperature": temperature
+                }
 
                 # Add thinking configuration if enabled and this prompt should use thinking
                 if enable_thinking and prom in thinking_prompts:
@@ -767,8 +771,10 @@ Specific Instructions:
 
                     if prom in list_output_prompts:
                         results[prom] = _extract_list_from_string(output_text_retry)
-                    else:
+                    elif output_text_retry is not None:
                         results[prom] = output_text_retry.strip()
+                    else:
+                        results[prom] = ""  # Ensure empty string if None
 
                     # Check if retry was successful
                     if results[prom] != "" and results[prom] != "[]":

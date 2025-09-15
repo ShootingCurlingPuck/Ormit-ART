@@ -1,17 +1,19 @@
 import ast
 import os
 from datetime import datetime
+from typing import Any
 
 from docx import Document
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Inches, Pt
 
+from constants import Gender, Program
+
 # Import common functions from report_utils
 from .report_utils import (
     _safe_get_cell,
     _safe_get_table,
-    _safe_literal_eval,
     _safe_set_text,
     replace_and_format_header_text,
     replace_piet_in_list,
@@ -19,7 +21,14 @@ from .report_utils import (
     replacePiet,
     resource_path,
     restructure_date,
+    safe_literal_eval,
     split_paragraphs_at_marker_and_style,
+)
+from .write_report_common import (
+    add_content_cogcaptable,
+    add_content_cogcaptable_remark,
+    add_content_detailstable,
+    add_icon_to_cell,
 )
 
 # --- Constants specific to MCP report template ---
@@ -89,7 +98,13 @@ def set_font_properties2(para):
             rPr.append(rFonts)
 
 
-def update_document(output_dic, name, assessor, gender, program):
+def update_document(
+    output_dic: dict[str, Any],
+    name: str,
+    assessor: str,
+    gender: Gender,
+    program: Program,
+):
     """Updates the Word document (MCP version)."""
     try:
         doc = Document(resource_path("resources/template.docx"))  # MCP Template
@@ -126,7 +141,7 @@ def update_document(output_dic, name, assessor, gender, program):
 
     # Language Skill replacements
     language_replacements_str = output_dic.get("prompt5_language", "[]")
-    language_levels = _safe_literal_eval(language_replacements_str, [])
+    language_levels = safe_literal_eval(language_replacements_str, [])
     if isinstance(language_levels, list):
         language_names = ["Dutch", "French", "English"]
         for index, language_name in enumerate(language_names):
@@ -153,7 +168,7 @@ def update_document(output_dic, name, assessor, gender, program):
     for original_key in list_prompt_keys_original:
         if original_key in output_dic:
             list_str = output_dic.get(original_key, "[]")
-            list_items = _safe_literal_eval(list_str, [])
+            list_items = safe_literal_eval(list_str, [])
             if isinstance(list_items, list):
                 list_items_pietless = replace_piet_in_list(list_items, name, gender)
                 output_dic[original_key] = list_items_pietless
@@ -177,7 +192,7 @@ def update_document(output_dic, name, assessor, gender, program):
     qual_scores_str = output_dic.get(
         "prompt7_qualscore_original", output_dic.get("prompt7_qualscore", "[]")
     )
-    qual_scores = _safe_literal_eval(qual_scores_str, [])
+    qual_scores = safe_literal_eval(qual_scores_str, [])
     if isinstance(qual_scores, list):
         add_icons2(doc, qual_scores)
     else:
@@ -212,7 +227,7 @@ def update_document(output_dic, name, assessor, gender, program):
         return None
 
 
-def format_datatools_output(datatools_json_string):
+def format_datatools_output(datatools_json_string: str) -> str:
     """Formats data tools output (not used in MCP, kept for consistency)."""
     try:
         return "\n".join(
@@ -223,7 +238,7 @@ def format_datatools_output(datatools_json_string):
         return "Could not parse data tools information."
 
 
-def format_interests_output(interests_json_string):
+def format_interests_output(interests_json_string: str) -> str:
     """Formats interests output (not directly used in MCP, kept for consistency)."""
     try:
         return "\n".join(
@@ -231,108 +246,6 @@ def format_interests_output(interests_json_string):
         )
     except (ValueError, SyntaxError):
         return "Could not parse interests information."
-
-
-def add_content_detailstable(doc, personal_details):
-    table = _safe_get_table(doc, DETAILS_TABLE_INDEX)
-    if not table:
-        return
-
-    if not isinstance(personal_details, list):
-        print("Warning: personal_details is not a list.")  # Example of console warning
-        return
-
-    if len(personal_details) == 1 and all(
-        isinstance(ele, str) for ele in personal_details
-    ):
-        personal_details = personal_details[0].split(",")
-
-    for row_index, row in enumerate(table.rows):
-        if len(row.cells) > 1:
-            first_cell_text = row.cells[0].text.strip()
-            second_cell_text = row.cells[1].text.strip()
-
-            if first_cell_text == "Name candidate" and second_cell_text == ":":
-                cell = _safe_get_cell(table, row_index, 2)
-                _safe_set_text(
-                    cell, personal_details[0] if len(personal_details) > 0 else ""
-                )
-
-            if first_cell_text == "Date of birth" and second_cell_text == ":":
-                cell = _safe_get_cell(table, row_index, 2)
-                _safe_set_text(
-                    cell,
-                    restructure_date(personal_details[1])
-                    if len(personal_details) > 1
-                    else "",
-                )
-
-            if first_cell_text == "Position" and second_cell_text == ":":
-                cell = _safe_get_cell(table, row_index, 2)
-                _safe_set_text(
-                    cell, personal_details[2] if len(personal_details) > 2 else ""
-                )
-
-            if first_cell_text == "Assessment date" and second_cell_text == ":":
-                cell = _safe_get_cell(table, row_index, 2)
-                _safe_set_text(
-                    cell,
-                    restructure_date(personal_details[3])
-                    if len(personal_details) > 3
-                    else "",
-                )
-
-            if first_cell_text == "Pool" and second_cell_text == ":":
-                cell = _safe_get_cell(table, row_index, 2)
-                _safe_set_text(
-                    cell, personal_details[4] if len(personal_details) > 4 else ""
-                )
-
-
-def add_content_cogcaptable(doc, scores_str):
-    """Adds cognitive capacity scores."""
-    table = _safe_get_table(doc, COGCAP_TABLE_INDEX)
-    if not table:
-        return
-
-    scores = _safe_literal_eval(scores_str, [])
-    if not isinstance(scores, list) or len(scores) != 6:
-        print(
-            "Warning: Invalid scores data. Expected a list of 6 numbers."
-        )  # Example of console warning
-        return
-
-    for i in range(6):
-        cell = _safe_get_cell(table, 1, i + 1)  # Row 1 (second row)
-        if cell:
-            if i == 0:
-                _safe_set_text(cell, scores[i])
-                paragraph = cell.paragraphs[0]
-                run = paragraph.runs[0]
-                run.bold = True
-                run.underline = True
-                paragraph.alignment = 1
-            else:
-                _safe_set_text(cell, scores[i])
-                paragraph = cell.paragraphs[0]
-                paragraph.alignment = 1
-
-
-def add_content_cogcaptable_remark(doc, cogcap_output):
-    """Adds remarks to the cognitive capacity table."""
-    if not isinstance(cogcap_output, str):
-        print("Warning: cogcap_output is not a string.")  # Example of console warning
-        return
-
-    table = _safe_get_table(doc, COGCAP_TABLE_INDEX)
-    if not table:
-        return
-
-    remark_cell = _safe_get_cell(table, 2, 1)  # Row 2 (third row)
-    if not remark_cell:
-        return
-
-    _safe_set_text(remark_cell, cogcap_output)
 
 
 def add_icons2(doc, list_scores):
@@ -361,52 +274,6 @@ def add_icons2(doc, list_scores):
                     run = cell.paragraphs[0].add_run("N/A")
                     run.font.name = "Montserrat Light"
                     run.font.size = Pt(9)
-
-
-def add_icon_to_cell(cell, score):
-    """
-    Adds an icon based on the score to a cell (modified for MCP).
-
-    This function has been updated to handle None values properly, which are
-    now used to represent "N/A" instead of -99.
-    """
-    if cell is None:
-        print(
-            "Warning: add_icon_to_cell called with None cell."
-        )  # Example of console warning
-        return
-
-    _safe_set_text(cell, "")
-
-    # Handle None (N/A) or non-integer scores
-    if score is None or not isinstance(score, int):
-        try:
-            # Try to convert to int if possible (but not if None)
-            score = int(score) if score is not None else None
-        except (ValueError, TypeError):
-            # If it's N/A or cannot be converted, use a default icon or text
-            print(f"Warning: Non-integer score encountered: {score}. Using N/A.")
-            run = cell.paragraphs[0].add_run("N/A")
-            run.font.name = "Montserrat Light"
-            run.font.size = Pt(9)
-            return
-
-    # Special handling for None (our placeholder for N/A)
-    if score is None:
-        run = cell.paragraphs[0].add_run("N/A")
-        run.font.name = "Montserrat Light"
-        run.font.size = Pt(9)
-        return
-
-    run = cell.paragraphs[0].add_run()
-    if score == -1:
-        run.add_picture(resource_path("resources/improvement.png"), width=Inches(0.3))
-    elif score == 0:
-        run.add_picture(resource_path("resources/average.png"), width=Inches(0.3))
-    elif score == 1:
-        run.add_picture(resource_path("resources/strong.png"), width=Inches(0.3))
-    else:
-        print(f"Warning: Invalid score value: {score}")  # Example of console warning
 
 
 def conclusion(doc, column, list_items):

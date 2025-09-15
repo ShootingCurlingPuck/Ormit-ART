@@ -4,6 +4,8 @@ import shutil
 
 import fitz
 
+from data_models import GuiData, IcpGuiData
+
 
 class Redactor:
     @staticmethod
@@ -41,15 +43,13 @@ class Redactor:
             for match in re.finditer(PHONE_REG, line):
                 yield match.group(0)
 
-    def __init__(self, target_names):
-        if not isinstance(target_names, list):
-            raise TypeError("target_names must be a list of strings")
+    def __init__(self, target_names: list[str]) -> None:
         self.target_names = [
             name for name in target_names if name
         ]  # Ensure list and remove empty strings
         print(f"Redactor initialized to target: {self.target_names}")  # Debug print
 
-    def redaction(self, filename):
+    def redaction(self, filename: str) -> None:
         """Performs redaction on the given PDF filename."""
         if not self.target_names:
             print(f"Skipping redaction for {filename}: No target names provided.")
@@ -61,8 +61,6 @@ class Redactor:
             changes = 0
             for page in doc:
                 for name_to_redact in self.target_names:
-                    # Split name into parts if needed (e.g., "First Last")
-                    name_parts = name_to_redact.split()
                     # --- Redact full name ---
                     sensitive_areas = page.search_for(name_to_redact, quads=True)
                     if sensitive_areas:
@@ -108,15 +106,15 @@ def create_temp_folder():
         os.makedirs(temp_folder)
 
 
-def redact_folder(GUI_data):
+def redact_folder(GUI_data: GuiData | IcpGuiData):
     """Redacts specified names in the specific PDF files provided via GUI_data."""
 
     # Make sure temp folder exists
     create_temp_folder()
 
     # Extract names needed for redaction from GUI_data
-    applicant_name = GUI_data.get("Applicant Name", "").strip()
-    assessor_name = GUI_data.get("Assessor Name", "").strip()
+    applicant_name = GUI_data["applicant_name"].strip()
+    assessor_name = GUI_data["assessor_name"].strip()
     target_names_list = [
         name for name in [applicant_name, assessor_name] if name
     ]  # Filter out empty strings
@@ -172,13 +170,13 @@ def redact_folder(GUI_data):
             shutil.copy2(file_path, dest_path)
 
             # Update the file path in GUI_data to point to the new location
-            GUI_data["Files"][file_key] = dest_path
+            GUI_data["files"][file_key] = dest_path
         except Exception as e:
             print(f"Error copying file {file_path} to temp directory: {e}")
             continue
 
     # --- Now redact the files in the temp directory ---
-    for file_key, file_path in GUI_data["Files"].items():
+    for file_key, file_path in GUI_data["files"].items():
         # Skip if file path is invalid after copying
         if not file_path or not os.path.isfile(file_path):
             print(

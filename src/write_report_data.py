@@ -2,16 +2,18 @@ import ast
 import os
 import re
 from datetime import datetime
+from typing import Any
 
 from docx import Document
 from docx.shared import Inches, Pt, RGBColor
+
+from constants import Font, FontSize, Gender, Program
 
 # Import common functions from report_utils
 from .report_utils import (
     _safe_add_paragraph,
     _safe_get_cell,
     _safe_get_table,
-    _safe_literal_eval,
     _safe_set_text,
     replace_and_format_header_text,
     replace_piet_in_list,
@@ -19,7 +21,14 @@ from .report_utils import (
     replacePiet,
     resource_path,
     restructure_date,
+    safe_literal_eval,
     split_paragraphs_at_marker_and_style,
+)
+from .write_report_common import (
+    add_content_cogcaptable,
+    add_content_cogcaptable_remark,
+    add_content_detailstable,
+    add_icon_to_cell,
 )
 
 # --- Constants ---
@@ -37,7 +46,11 @@ LANGUAGE_SKILLS_TABLE_INDEX = 14
 
 
 def replace_placeholder_in_docx(
-    doc, placeholder, replacement, font_name="Montserrat", font_size=10
+    doc,
+    placeholder,
+    replacement,
+    font_name: Font = Font.MONTSERRAT_REGULAR,
+    font_size: FontSize = FontSize.MEDIUM,
 ):
     """Replaces a placeholder in the document with custom font."""
     for paragraph in doc.paragraphs:
@@ -46,11 +59,17 @@ def replace_placeholder_in_docx(
             for i in range(len(inline)):
                 if placeholder in inline[i].text:
                     inline[i].text = inline[i].text.replace(placeholder, replacement)
-                    inline[i].font.name = font_name
-                    inline[i].font.size = Pt(font_size)
+                    inline[i].font.name = font_name.value
+                    inline[i].font.size = Pt(font_size.value)
 
 
-def update_document(output_dic, name, assessor, gender, program):
+def update_document(
+    output_dic: dict[str, Any],
+    name: str,
+    assessor: str,
+    gender: Gender,
+    program: Program,
+):
     """Updates the Word document."""
     try:
         doc = Document(resource_path("resources/Assessment_report_Data_chiefs.docx"))
@@ -84,7 +103,7 @@ def update_document(output_dic, name, assessor, gender, program):
 
     # Language Skill placeholders (assuming they exist in the Data template too)
     language_replacements_str = output_dic.get("prompt5_language", "[]")
-    language_levels = _safe_literal_eval(language_replacements_str, [])
+    language_levels = safe_literal_eval(language_replacements_str, [])
     if isinstance(language_levels, list):
         language_names = ["Dutch", "French", "English"]
         for index, language_name in enumerate(language_names):
@@ -110,7 +129,7 @@ def update_document(output_dic, name, assessor, gender, program):
         if original_key in output_dic:
             list_str = output_dic.get(original_key, "[]")
             # Safely evaluate the ORIGINAL JSON string
-            list_items = _safe_literal_eval(list_str, [])
+            list_items = safe_literal_eval(list_str, [])
             if isinstance(list_items, list):
                 # Replace Piet in each list item
                 list_items_pietless = replace_piet_in_list(list_items, name, gender)
@@ -137,7 +156,7 @@ def update_document(output_dic, name, assessor, gender, program):
     # Ensure backslashes are removed before parsing
     if isinstance(language_replacements_str, str):
         language_replacements_str = language_replacements_str.replace("\\", "")
-    language_levels = _safe_literal_eval(language_replacements_str, [])
+    language_levels = safe_literal_eval(language_replacements_str, [])
     update_language_skills_table(doc, language_levels)
 
     # --- Conclusion Table ---
@@ -151,7 +170,7 @@ def update_document(output_dic, name, assessor, gender, program):
 
     # Profile review (icons)
     qual_scores_str = output_dic.get("prompt7_qualscore_data", "[]")
-    qual_scores = _safe_literal_eval(qual_scores_str, [])
+    qual_scores = safe_literal_eval(qual_scores_str, [])
     if isinstance(qual_scores, list) and len(qual_scores) >= 23:
         add_icons_data_chief(doc, qual_scores[:18])
         add_icons_data_chief_2(doc, qual_scores[18:23])
@@ -160,7 +179,7 @@ def update_document(output_dic, name, assessor, gender, program):
 
     # Data tools (icons)
     data_tools_str = output_dic.get("prompt8_datatools", "[]")
-    data_tools_scores = _safe_literal_eval(data_tools_str, [])
+    data_tools_scores = safe_literal_eval(data_tools_str, [])
     if isinstance(data_tools_scores, list):
         add_icons_data_tools(doc, data_tools_scores)
     else:
@@ -190,7 +209,7 @@ def update_document(output_dic, name, assessor, gender, program):
         return None
 
 
-def format_datatools_output(datatools_json_string):
+def format_datatools_output(datatools_json_string: str) -> str:
     """Formats data tools output from JSON string."""
     try:
         datatools_dict = ast.literal_eval(datatools_json_string)
@@ -202,7 +221,7 @@ def format_datatools_output(datatools_json_string):
         return "Could not parse data tools information."
 
 
-def format_interests_output(interests_json_string):
+def format_interests_output(interests_json_string: str) -> str:
     """Formats interests output from JSON string."""
     try:
         # Clean the string by removing backslashes
@@ -235,107 +254,6 @@ def format_interests_output(interests_json_string):
     except (ValueError, SyntaxError) as e:
         print(f"Error parsing interests: {e}")
         return "Could not parse interests information."
-
-
-def add_content_detailstable(doc, personal_details):
-    """Adds personal details to the first table."""
-    table = _safe_get_table(doc, DETAILS_TABLE_INDEX)
-    if not table:
-        return
-
-    if not isinstance(personal_details, list):
-        print("Warning: personal_details is not a list.")
-        return
-
-    if len(personal_details) == 1 and all(
-        isinstance(ele, str) for ele in personal_details
-    ):
-        personal_details = personal_details[0].split(",")
-
-    for row_index, row in enumerate(table.rows):
-        if len(row.cells) > 1:
-            first_cell_text = row.cells[0].text.strip()
-            second_cell_text = row.cells[1].text.strip()
-
-            if first_cell_text == "Name candidate" and second_cell_text == ":":
-                cell = _safe_get_cell(table, row_index, 2)
-                _safe_set_text(
-                    cell, personal_details[0] if len(personal_details) > 0 else ""
-                )
-
-            if first_cell_text == "Date of birth" and second_cell_text == ":":
-                cell = _safe_get_cell(table, row_index, 2)
-                _safe_set_text(
-                    cell,
-                    restructure_date(personal_details[1])
-                    if len(personal_details) > 1
-                    else "",
-                )
-
-            if first_cell_text == "Position" and second_cell_text == ":":
-                cell = _safe_get_cell(table, row_index, 2)
-                _safe_set_text(
-                    cell, personal_details[2] if len(personal_details) > 2 else ""
-                )
-
-            if first_cell_text == "Assessment date" and second_cell_text == ":":
-                cell = _safe_get_cell(table, row_index, 2)
-                _safe_set_text(
-                    cell,
-                    restructure_date(personal_details[3])
-                    if len(personal_details) > 3
-                    else "",
-                )
-
-            if first_cell_text == "Pool" and second_cell_text == ":":
-                cell = _safe_get_cell(table, row_index, 2)
-                _safe_set_text(
-                    cell, personal_details[4] if len(personal_details) > 4 else ""
-                )
-
-
-def add_content_cogcaptable(doc, scores_str):
-    """Adds cognitive capacity scores."""
-    table = _safe_get_table(doc, COGCAP_TABLE_INDEX)
-    if not table:
-        return
-
-    scores = _safe_literal_eval(scores_str, [])
-    if not isinstance(scores, list) or len(scores) != 6:
-        print("Warning: Invalid scores data. Expected a list of 6 numbers.")
-        return
-
-    for i in range(6):
-        cell = _safe_get_cell(table, 1, i + 1)
-        if cell:
-            if i == 0:
-                _safe_set_text(cell, scores[i])
-                paragraph = cell.paragraphs[0]
-                run = paragraph.runs[0]
-                run.bold = True
-                run.underline = True
-                paragraph.alignment = 1
-            else:
-                _safe_set_text(cell, scores[i])
-                paragraph = cell.paragraphs[0]
-                paragraph.alignment = 1
-
-
-def add_content_cogcaptable_remark(doc, cogcap_output):
-    """Adds remarks to the cognitive capacity table."""
-    if not isinstance(cogcap_output, str):
-        print("Warning: cogcap_output is not a string.")
-        return
-
-    table = _safe_get_table(doc, COGCAP_TABLE_INDEX)
-    if not table:
-        return
-
-    remark_cell = _safe_get_cell(table, 2, 1)
-    if not remark_cell:
-        return
-
-    _safe_set_text(remark_cell, cogcap_output)
 
 
 def add_icons_data_chief(doc, list_scores):
@@ -420,50 +338,6 @@ def add_icons_data_tools(doc, list_scores):
             add_icon_to_cell(cell, list_scores[i])
 
 
-def add_icon_to_cell(cell, score):
-    """
-    Adds an icon based on the score to a cell.
-
-    This function has been updated to handle None values properly, which are
-    now used to represent "N/A" instead of -99.
-    """
-    if cell is None:
-        print("Warning: add_icon_to_cell called with None cell.")
-        return
-
-    _safe_set_text(cell, "")
-
-    # Handle None (N/A) or non-integer scores
-    if score is None or not isinstance(score, int):
-        try:
-            # Try to convert to int if possible (but not if None)
-            score = int(score) if score is not None else None
-        except (ValueError, TypeError):
-            # If it's N/A or cannot be converted, use a default icon or text
-            print(f"Warning: Non-integer score encountered: {score}. Using N/A.")
-            run = cell.paragraphs[0].add_run("N/A")
-            run.font.name = "Montserrat"
-            run.font.size = Pt(9)
-            return
-
-    # Special handling for None (our placeholder for N/A)
-    if score is None:
-        run = cell.paragraphs[0].add_run("N/A")
-        run.font.name = "Montserrat"
-        run.font.size = Pt(9)
-        return
-
-    run = cell.paragraphs[0].add_run()
-    if score == -1:
-        run.add_picture(resource_path("resources/improvement.png"), width=Inches(0.3))
-    elif score == 0:
-        run.add_picture(resource_path("resources/average.png"), width=Inches(0.3))
-    elif score == 1:
-        run.add_picture(resource_path("resources/strong.png"), width=Inches(0.3))
-    else:
-        print(f"Warning: Invalid score value: {score}")
-
-
 def add_interests_table(doc, interests_text):
     """Fills in interests into the Interests Table as comma-separated text."""
     table = _safe_get_table(doc, INTERESTS_TABLE_INDEX)
@@ -483,7 +357,7 @@ def add_interests_table(doc, interests_text):
         else:
             # Process as a list
             try:
-                interests_list = _safe_literal_eval(interests_text, [])
+                interests_list = safe_literal_eval(interests_text, [])
 
                 # Filter out N/A values
                 interests_list = [

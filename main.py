@@ -2,6 +2,7 @@ import os
 import stat
 import sys
 import traceback
+from typing import Any
 
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QFont, QIcon, QPixmap
@@ -21,6 +22,8 @@ from PyQt6.QtWidgets import (
 
 import src.write_report_data as data_write_report
 import src.write_report_mcp as mcp_write_report
+from data_models import GuiData, IcpGuiData
+from src.constants import Gender, Program
 from src.global_signals import global_signals
 from src.prompting import send_prompts
 from src.redact import redact_folder
@@ -33,14 +36,11 @@ icon_path_abs = "resources/assessmentReport.ico"
 logo_path = resource_path(logo_path_abs)
 icon_path = resource_path(icon_path_abs)
 
-programs = ["MCP", "DATA", "ICP"]
-genders = ["M", "F"]
-
 
 class ProcessingThread(QThread):
     processing_completed = pyqtSignal(str)
 
-    def __init__(self, GUI_data):
+    def __init__(self, GUI_data: GuiData | IcpGuiData):
         super().__init__()
         self.GUI_data = GUI_data
 
@@ -51,7 +51,7 @@ class ProcessingThread(QThread):
                 os.makedirs("temp")
 
             # Check if all required files exist
-            for file_key, file_path in self.GUI_data["Files"].items():
+            for _, file_path in self.GUI_data["files"].items():
                 if not os.path.exists(file_path):
                     global_signals.update_message.emit(
                         f"Error: File not found: {file_path}"
@@ -69,23 +69,23 @@ class ProcessingThread(QThread):
             # Convert JSON to report
             global_signals.update_message.emit("Generating report...")
             clean_data = clean_up(output_path)
-            selected_program = self.GUI_data["Traineeship"]
+            selected_program = self.GUI_data["traineeship"]
 
-            if selected_program == "MCP" or selected_program == "ICP":
+            if selected_program == Program.MNGT or selected_program == Program.ICP:
                 updated_doc = mcp_write_report.update_document(
                     clean_data,
-                    self.GUI_data["Applicant Name"],
-                    self.GUI_data["Assessor Name"],
-                    self.GUI_data["Gender"],
-                    self.GUI_data["Traineeship"],
+                    self.GUI_data["applicant_name"],
+                    self.GUI_data["assessor_name"],
+                    self.GUI_data["gender"],
+                    self.GUI_data["traineeship"],
                 )
-            elif selected_program == "DATA":
+            elif selected_program == Program.DATA:
                 updated_doc = data_write_report.update_document(
                     clean_data,
-                    self.GUI_data["Applicant Name"],
-                    self.GUI_data["Assessor Name"],
-                    self.GUI_data["Gender"],
-                    self.GUI_data["Traineeship"],
+                    self.GUI_data["applicant_name"],
+                    self.GUI_data["assessor_name"],
+                    self.GUI_data["gender"],
+                    self.GUI_data["traineeship"],
                 )
             else:
                 # Default fallback (can remain MCP or be made more specific if needed)
@@ -94,10 +94,10 @@ class ProcessingThread(QThread):
                 )
                 updated_doc = mcp_write_report.update_document(
                     clean_data,
-                    self.GUI_data["Applicant Name"],
-                    self.GUI_data["Assessor Name"],
-                    self.GUI_data["Gender"],
-                    self.GUI_data["Traineeship"],
+                    self.GUI_data["applicant_name"],
+                    self.GUI_data["assessor_name"],
+                    self.GUI_data["gender"],
+                    self.GUI_data["traineeship"],
                 )
 
             if updated_doc:
@@ -119,7 +119,7 @@ class ProcessingThread(QThread):
 class MainWindow(QWidget):
     KEY_FILE = os.path.expanduser("~/.ormit_gemini_key")
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.setWindowTitle("ORMIT - Draft Assessment Report v1.0")
         self.setWindowIcon(QIcon(icon_path))
@@ -196,8 +196,8 @@ class MainWindow(QWidget):
         layout.addWidget(self.gender_label, 4, 0)
 
         self.gender_combo = QComboBox(self)
-        for i in genders:
-            self.gender_combo.addItem(i)
+        for gender in Gender:
+            self.gender_combo.addItem(gender)
         self.gender_combo.setToolTip("Select a gender")
         layout.addWidget(self.gender_combo, 4, 1)
 
@@ -264,8 +264,8 @@ Cons: Slower response, higher cost.""")
         layout.addWidget(self.program_label, 6, 0)
 
         self.program_combo = QComboBox(self)
-        for i in programs:
-            self.program_combo.addItem(i)
+        for program in Program:
+            self.program_combo.addItem(program)
         self.program_combo.setToolTip("Select a traineeship")
         layout.addWidget(self.program_combo, 6, 1)
 
@@ -275,7 +275,7 @@ Cons: Slower response, higher cost.""")
         self.file_label3 = QLabel("No file selected", self)
 
         # File selection buttons
-        self.selected_files = {}
+        self.selected_files: dict[str, str] = {}
         self.file_browser_btn1 = QPushButton("PAPI Gebruikersrapport")
         self.file_browser_btn1.clicked.connect(lambda: self.open_file_dialog(1))
         layout.addWidget(self.file_browser_btn1, 7, 0)
@@ -356,7 +356,7 @@ Cons: Slower response, higher cost.""")
         # Initialize UI based on default selection
         self.handle_program_change()
 
-    def refresh_message_box(self, message):
+    def refresh_message_box(self, message: str):
         self.msg_box.setText(message)
         # Make sure the message box is visible
         if not self.msg_box.isVisible():
@@ -372,7 +372,7 @@ Cons: Slower response, higher cost.""")
         """Shows or hides ICP-specific widgets based on program selection."""
         selected_program = self.program_combo.currentText()
         # print(f"handle_program_change called. Selected program: {selected_program}") # Keep DEBUG if needed
-        is_icp = selected_program == "ICP"
+        is_icp = selected_program == Program.ICP
         # print(f"Is ICP selected? {is_icp}") # Keep DEBUG if needed
 
         # Show/Hide the 3 labels and 3 inputs for specific prompts
@@ -388,7 +388,7 @@ Cons: Slower response, higher cost.""")
         self.icp_desc_label.setVisible(is_icp)
         # print("ICP Widget visibility set.") # Keep DEBUG if needed
 
-    def open_file_dialog(self, file_index):
+    def open_file_dialog(self, file_index: int):
         dialog = QFileDialog(self)
         dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
         if file_index == 4:
@@ -439,7 +439,7 @@ Cons: Slower response, higher cost.""")
         except Exception as e:
             print(f"Warning: Could not load saved Gemini key: {e}")
 
-    def _save_key(self, key):
+    def _save_key(self, key: str):
         try:
             with open(self.KEY_FILE, "w") as f:
                 f.write(key.strip())
@@ -492,21 +492,22 @@ Cons: Slower response, higher cost.""")
             )
             return
 
-        selected_program = self.program_combo.currentText()
+        selected_program = Program(self.program_combo.currentText())
+        selected_gender = Gender(self.gender_combo.currentText())
 
         # Gather all the data into a dictionary
-        GUI_data = {
-            "Gemini Key": self.openai_key_input.text(),
-            "Applicant Name": self.applicant_name_input.text(),
-            "Assessor Name": self.assessor_name_input.text(),
-            "Gender": self.gender_combo.currentText(),
-            "Traineeship": selected_program,
-            "Files": self.selected_files.copy(),
-            "Enable Thinking": self.enable_thinking_checkbox.isChecked(),
-        }
+        GUI_data = GuiData(
+            gemini_key=self.openai_key_input.text(),
+            applicant_name=self.applicant_name_input.text(),
+            assessor_name=self.assessor_name_input.text(),
+            gender=selected_gender,
+            traineeship=selected_program,
+            files=self.selected_files.copy(),
+            enable_thinking=self.enable_thinking_checkbox.isChecked(),
+        )
 
         # Add ICP-specific data and validation
-        if selected_program == "ICP":
+        if selected_program == Program.ICP:
             # Check required ICP description file
             if (
                 "ICP Description" not in self.selected_files
@@ -519,9 +520,12 @@ Cons: Slower response, higher cost.""")
                 )
                 return
             # Gather text from the THREE specific input fields
-            GUI_data["ICP_Info_Prompt3"] = self.icp_info_prompt3_input.text().strip()
-            GUI_data["ICP_Info_Prompt6a"] = self.icp_info_prompt6a_input.text().strip()
-            GUI_data["ICP_Info_Prompt6b"] = self.icp_info_prompt6b_input.text().strip()
+            GUI_data = IcpGuiData(
+                **GUI_data,
+                icp_info_prompt3=self.icp_info_prompt3_input.text().strip(),
+                icp_info_prompt6a=self.icp_info_prompt6a_input.text().strip(),
+                icp_info_prompt6b=self.icp_info_prompt6b_input.text().strip(),
+            )
 
         # Show processing message
         self.msg_box.setText("Starting processing...")
@@ -534,7 +538,7 @@ Cons: Slower response, higher cost.""")
         )
         self.processing_thread.start()
 
-    def on_processing_completed(self, updated_doc):
+    def on_processing_completed(self, updated_doc: str):
         self.msg_box.close()
         if updated_doc and os.path.exists(updated_doc):
             os.startfile(updated_doc)

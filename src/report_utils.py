@@ -12,13 +12,16 @@ import os
 import re
 import sys
 from datetime import datetime
+from typing import Any
 
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Pt, RGBColor
 
+from .constants import Font, FontSize, Gender
 
-def resource_path(relative_path):
+
+def resource_path(relative_path: str) -> str:
     """
     Get absolute path to resource, works for dev and PyInstaller.
 
@@ -26,7 +29,7 @@ def resource_path(relative_path):
     or from a bundled executable created with PyInstaller.
     """
     try:
-        base_path = sys._MEIPASS
+        base_path = str(sys._MEIPASS)
     except AttributeError:
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
@@ -86,8 +89,8 @@ def _safe_set_text(cell, text):
             p.getparent().remove(p)
         paragraph = cell.add_paragraph()
         run = paragraph.add_run(str(text))
-        run.font.name = "Montserrat Light"
-        run.font.size = Pt(10)
+        run.font.name = Font.MONTSERRAT_LIGHT.value
+        run.font.size = Pt(FontSize.MEDIUM.value)
 
 
 def _safe_add_paragraph(cell, text):
@@ -101,8 +104,8 @@ def _safe_add_paragraph(cell, text):
     if cell:
         paragraph = cell.add_paragraph(text)
         run = paragraph.runs[0]
-        run.font.name = "Montserrat"
-        run.font.size = Pt(10)
+        run.font.name = Font.MONTSERRAT_REGULAR.value
+        run.font.size = Pt(FontSize.MEDIUM.value)
 
         r = run._element
         rPr = r.rPr
@@ -113,16 +116,16 @@ def _safe_add_paragraph(cell, text):
         rFonts = OxmlElement("w:rFonts")
         rFonts.set(
             "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}ascii",
-            "Montserrat Light",
+            Font.MONTSERRAT_LIGHT.value,
         )
         rFonts.set(
             "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}hAnsi",
-            "Montserrat Light",
+            Font.MONTSERRAT_LIGHT.value,
         )
         rPr.append(rFonts)
 
 
-def _safe_literal_eval(s, default=None):
+def safe_literal_eval(s: str, default: Any | None = None) -> Any:
     """
     Safely evaluates a string as a Python literal, removing backslashes.
 
@@ -387,8 +390,8 @@ def split_paragraphs_and_apply_styles(doc):
 
                     if actual_para_obj:
                         for run in actual_para_obj.runs:
-                            run.font.name = "Montserrat"
-                            run.font.size = Pt(10)
+                            run.font.name = Font.MONTSERRAT_REGULAR.value
+                            run.font.size = Pt(FontSize.MEDIUM.value)
                 except Exception as e:
                     print(f"Warning: Could not apply font to split paragraph: {e}")
 
@@ -432,7 +435,7 @@ def strip_extra_quotes(input_string):
     return input_string
 
 
-def replacePiet(text, name, gender):
+def replacePiet(text: str, name: str, gender: Gender):
     """
     Replaces 'Piet' and handles gender-specific pronouns.
 
@@ -444,13 +447,10 @@ def replacePiet(text, name, gender):
     Returns:
         Processed text
     """
-    if not isinstance(text, str):
-        return ""
-
     text = text.replace("Piet", name.split()[0])
     text = re.sub(r"\bthe trainee\b", name.split()[0], text, flags=re.IGNORECASE)
 
-    if gender == "M":
+    if gender == Gender.M:
         replacements = {
             "She": "He",
             "she": "he",
@@ -461,7 +461,7 @@ def replacePiet(text, name, gender):
             "Herself": "Himself",
             "herself": "himself",
         }
-    elif gender == "F":
+    elif gender == Gender.F:
         replacements = {
             "He": "She",
             "he": "she",
@@ -480,7 +480,7 @@ def replacePiet(text, name, gender):
     return text
 
 
-def replace_piet_in_list(items_list, name, gender):
+def replace_piet_in_list(items_list: list[Any], name: str, gender: Gender) -> list[Any]:
     """
     Replaces 'Piet' in each string item of a list.
 
@@ -492,10 +492,7 @@ def replace_piet_in_list(items_list, name, gender):
     Returns:
         Processed list
     """
-    if not isinstance(items_list, list):
-        return items_list
-
-    result = []
+    result: list[Any] = []
     for item in items_list:
         if isinstance(item, str):
             result.append(replacePiet(item, name, gender))
@@ -504,7 +501,7 @@ def replace_piet_in_list(items_list, name, gender):
     return result
 
 
-def restructure_date(date_str):
+def restructure_date(date_str: str) -> str:
     """
     Restructures date string to DD-MM-YYYY format.
 
@@ -544,18 +541,18 @@ def replace_and_format_header_text(doc, new_text):
             if "***" in paragraph.text:
                 paragraph.text = paragraph.text.replace("***", new_text)
                 for run in paragraph.runs:
-                    run.font.name = "Montserrat"
-                    run.font.size = Pt(10)
+                    run.font.name = Font.MONTSERRAT_REGULAR.value
+                    run.font.size = Pt(FontSize.MEDIUM.value)
                     run.font.color.rgb = RGBColor(*(0xED, 0x6B, 0x55))
                     run.bold = True
                     run.italic = False
                     rFonts = OxmlElement("w:rFonts")
-                    rFonts.set(qn("w:ascii"), "Montserrat")
-                    rFonts.set(qn("w:hAnsi"), "Montserrat")
+                    rFonts.set(qn("w:ascii"), Font.MONTSERRAT_REGULAR.value)
+                    rFonts.set(qn("w:hAnsi"), Font.MONTSERRAT_REGULAR.value)
                     run._element.rPr.append(rFonts)
 
 
-def clean_up(loc_dic):
+def clean_up(loc_dic: str) -> dict[str, Any]:
     """
     Loads and cleans JSON data, handling Gemini variations.
 
@@ -570,9 +567,9 @@ def clean_up(loc_dic):
     """
     try:
         with open(loc_dic, "r", encoding="utf-8") as f:
-            loaded_data = json.load(f)
+            loaded_data: dict[str, Any] = json.load(f)
 
-        cleaned_data = {}
+        cleaned_data: dict[str, Any] = {}
         for key, value in loaded_data.items():
             if isinstance(value, str):
                 cleaned_value = clean(value.replace("\\", ""))
@@ -593,7 +590,7 @@ def clean_up(loc_dic):
         return {}
 
 
-def open_file(file_path):
+def open_file(file_path: str):
     """
     Opens file based on OS.
 
@@ -635,8 +632,8 @@ def split_paragraphs_at_marker_and_style(doc):
 
             # Ensure consistent font and size for the last part
             for run in para.runs:
-                run.font.name = "Montserrat"
-                run.font.size = Pt(10)
+                run.font.name = Font.MONTSERRAT_REGULAR.value
+                run.font.size = Pt(FontSize.MEDIUM.value)
 
             # Insert new paragraphs for the preceding parts *before* the current one (in reverse order)
             for part in reversed(parts[:-1]):
@@ -675,10 +672,12 @@ def split_paragraphs_at_marker_and_style(doc):
                     # Apply font within the run properties if needed
                     rPr_run = OxmlElement("w:rPr")
                     rFonts = OxmlElement("w:rFonts")
-                    rFonts.set(qn("w:ascii"), "Montserrat")
-                    rFonts.set(qn("w:hAnsi"), "Montserrat")
+                    rFonts.set(qn("w:ascii"), Font.MONTSERRAT_REGULAR.value)
+                    rFonts.set(qn("w:hAnsi"), Font.MONTSERRAT_REGULAR.value)
                     sz = OxmlElement("w:sz")
-                    sz.set(qn("w:val"), "20")  # Size in half-points (10pt = 20)
+                    sz.set(
+                        qn("w:val"), f"{FontSize.MEDIUM.value * 2}"
+                    )  # Size in half-points
                     rPr_run.append(rFonts)
                     rPr_run.append(sz)
                     run_element.append(rPr_run)

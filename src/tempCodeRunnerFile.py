@@ -16,6 +16,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from .constants import Gender, Program
 from .global_signals import global_signals
 from .prompting import send_prompts
 from .redact import redact_folder
@@ -29,9 +30,6 @@ icon_path_abs = "resources/assessmentReport.ico"
 
 logo_path = resource_path(logo_path_abs)
 icon_path = resource_path(icon_path_abs)
-
-programs = ["MCP", "DATA", "ICP"]
-genders = ["M", "F"]
 
 
 class ProcessingThread(QThread):
@@ -68,7 +66,7 @@ class ProcessingThread(QThread):
             clean_data = clean_up(output_path)
             selected_program = self.GUI_data["Traineeship"]
 
-            if selected_program == "MCP" or selected_program == "ICP":
+            if selected_program == Program.MNGT or selected_program == Program.ICP:
                 updated_doc = update_mcp_document(
                     clean_data,
                     self.GUI_data["Applicant Name"],
@@ -76,7 +74,7 @@ class ProcessingThread(QThread):
                     self.GUI_data["Gender"],
                     self.GUI_data["Traineeship"],
                 )
-            elif selected_program == "DATA":
+            elif selected_program == Program.DATA:
                 updated_doc = update_data_document(
                     clean_data,
                     self.GUI_data["Applicant Name"],
@@ -189,8 +187,8 @@ class MainWindow(QWidget):
         layout.addWidget(self.gender_label, 4, 0)
 
         self.gender_combo = QComboBox(self)
-        for i in genders:
-            self.gender_combo.addItem(i)
+        for gender in Gender:
+            self.gender_combo.addItem(gender)
         self.gender_combo.setToolTip("Select a gender")
         layout.addWidget(self.gender_combo, 4, 1)
 
@@ -202,8 +200,8 @@ class MainWindow(QWidget):
         layout.addWidget(self.program_label, 5, 0)
 
         self.program_combo = QComboBox(self)
-        for i in programs:
-            self.program_combo.addItem(i)
+        for program in Program:
+            self.program_combo.addItem(program)
         self.program_combo.setToolTip("Select a traineeship")
         layout.addWidget(self.program_combo, 5, 1)
 
@@ -310,7 +308,7 @@ class MainWindow(QWidget):
         """Shows or hides ICP-specific widgets based on program selection."""
         selected_program = self.program_combo.currentText()
         # print(f"handle_program_change called. Selected program: {selected_program}") # Keep DEBUG if needed
-        is_icp = selected_program == "ICP"
+        is_icp = selected_program == Program.ICP
         # print(f"Is ICP selected? {is_icp}") # Keep DEBUG if needed
 
         # Show/Hide the 3 labels and 3 inputs for specific prompts
@@ -414,7 +412,7 @@ class MainWindow(QWidget):
         }
 
         # Add ICP-specific data and validation
-        if selected_program == "ICP":
+        if selected_program == Program.ICP:
             # Check required ICP description file
             if (
                 "ICP Description" not in self.selected_files
@@ -460,4 +458,3 @@ if __name__ == "__main__":
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
-    main()
