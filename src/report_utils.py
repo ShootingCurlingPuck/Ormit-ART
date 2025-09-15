@@ -276,7 +276,6 @@ def replace_text_preserving_format(doc, data):
                     for i, run in enumerate(shuttle):
                         run_len = len(run.text)
                         run_start = processed_len
-                        run_end = processed_len + run_len
 
                         # Determine intersection of run with the key's location
                         replace_start_in_run = max(0, start_index_in_full - run_start)

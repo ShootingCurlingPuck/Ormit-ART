@@ -181,7 +181,7 @@ def update_document(output_dic, name, assessor, gender, program):
     if isinstance(qual_scores, list):
         add_icons2(doc, qual_scores)
     else:
-        print(f"Warning: Invalid qual_scores data.")
+        print("Warning: Invalid qual_scores data.")
 
     # --- Conclusion Table ---
     # (This section remains the same, using processed _original lists)
@@ -239,7 +239,7 @@ def add_content_detailstable(doc, personal_details):
         return
 
     if not isinstance(personal_details, list):
-        print(f"Warning: personal_details is not a list.")  # Example of console warning
+        print("Warning: personal_details is not a list.")  # Example of console warning
         return
 
     if len(personal_details) == 1 and all(
@@ -298,7 +298,7 @@ def add_content_cogcaptable(doc, scores_str):
     scores = _safe_literal_eval(scores_str, [])
     if not isinstance(scores, list) or len(scores) != 6:
         print(
-            f"Warning: Invalid scores data. Expected a list of 6 numbers."
+            "Warning: Invalid scores data. Expected a list of 6 numbers."
         )  # Example of console warning
         return
 
@@ -321,7 +321,7 @@ def add_content_cogcaptable(doc, scores_str):
 def add_content_cogcaptable_remark(doc, cogcap_output):
     """Adds remarks to the cognitive capacity table."""
     if not isinstance(cogcap_output, str):
-        print(f"Warning: cogcap_output is not a string.")  # Example of console warning
+        print("Warning: cogcap_output is not a string.")  # Example of console warning
         return
 
     table = _safe_get_table(doc, COGCAP_TABLE_INDEX)
@@ -338,7 +338,7 @@ def add_content_cogcaptable_remark(doc, cogcap_output):
 def add_icons2(doc, list_scores):
     """Adds icons to the profile review tables (MCP version)."""
     if not isinstance(list_scores, list):
-        print(f"Warning: list_scores is not a list.")  # Example of console warning
+        print("Warning: list_scores is not a list.")  # Example of console warning
         return
     table_no_start = FIRST_ICONS_TABLE
     score_index = 0
@@ -372,7 +372,7 @@ def add_icon_to_cell(cell, score):
     """
     if cell is None:
         print(
-            f"Warning: add_icon_to_cell called with None cell."
+            "Warning: add_icon_to_cell called with None cell."
         )  # Example of console warning
         return
 

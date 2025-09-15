@@ -4,8 +4,6 @@ import re
 from datetime import datetime
 
 from docx import Document
-from docx.oxml import OxmlElement
-from docx.oxml.ns import qn
 from docx.shared import Inches, Pt, RGBColor
 
 # Import common functions from report_utils
@@ -158,7 +156,7 @@ def update_document(output_dic, name, assessor, gender, program):
         add_icons_data_chief(doc, qual_scores[:18])
         add_icons_data_chief_2(doc, qual_scores[18:23])
     else:
-        print(f"Warning: Invalid qual_scores data.")
+        print("Warning: Invalid qual_scores data.")
 
     # Data tools (icons)
     data_tools_str = output_dic.get("prompt8_datatools", "[]")
@@ -166,7 +164,7 @@ def update_document(output_dic, name, assessor, gender, program):
     if isinstance(data_tools_scores, list):
         add_icons_data_tools(doc, data_tools_scores)
     else:
-        print(f"Warning: Invalid data_tools_scores data.")
+        print("Warning: Invalid data_tools_scores data.")
 
     # --- Save Document ---
     current_time = datetime.now()
@@ -246,7 +244,7 @@ def add_content_detailstable(doc, personal_details):
         return
 
     if not isinstance(personal_details, list):
-        print(f"Warning: personal_details is not a list.")
+        print("Warning: personal_details is not a list.")
         return
 
     if len(personal_details) == 1 and all(
@@ -304,7 +302,7 @@ def add_content_cogcaptable(doc, scores_str):
 
     scores = _safe_literal_eval(scores_str, [])
     if not isinstance(scores, list) or len(scores) != 6:
-        print(f"Warning: Invalid scores data. Expected a list of 6 numbers.")
+        print("Warning: Invalid scores data. Expected a list of 6 numbers.")
         return
 
     for i in range(6):
@@ -326,7 +324,7 @@ def add_content_cogcaptable(doc, scores_str):
 def add_content_cogcaptable_remark(doc, cogcap_output):
     """Adds remarks to the cognitive capacity table."""
     if not isinstance(cogcap_output, str):
-        print(f"Warning: cogcap_output is not a string.")
+        print("Warning: cogcap_output is not a string.")
         return
 
     table = _safe_get_table(doc, COGCAP_TABLE_INDEX)
@@ -343,7 +341,7 @@ def add_content_cogcaptable_remark(doc, cogcap_output):
 def add_icons_data_chief(doc, list_scores):
     """Adds icons to Human Skills tables."""
     if not isinstance(list_scores, list):
-        print(f"Warning: list_scores is not a list.")
+        print("Warning: list_scores is not a list.")
         return
 
     score_index = 0
@@ -371,7 +369,7 @@ def add_icons_data_chief(doc, list_scores):
 def add_icons_data_chief_2(doc, list_scores):
     """Adds icons to Technical Skills tables."""
     if not isinstance(list_scores, list):
-        print(f"Warning: list_scores is not a list.")
+        print("Warning: list_scores is not a list.")
         return
 
     score_index = 0
@@ -399,7 +397,7 @@ def add_icons_data_chief_2(doc, list_scores):
 def add_icons_data_tools(doc, list_scores):
     """Adds icons to Data Tools tables."""
     if not isinstance(list_scores, list):
-        print(f"Warning: list_scores is not a list.")
+        print("Warning: list_scores is not a list.")
         return
 
     # Ensure we have exactly 5 scores, padding with None (our N/A placeholder) if needed
@@ -430,7 +428,7 @@ def add_icon_to_cell(cell, score):
     now used to represent "N/A" instead of -99.
     """
     if cell is None:
-        print(f"Warning: add_icon_to_cell called with None cell.")
+        print("Warning: add_icon_to_cell called with None cell.")
         return
 
     _safe_set_text(cell, "")
@@ -517,14 +515,14 @@ def add_interests_table(doc, interests_text):
                 else:
                     interests_string = ", ".join(interests_list)
     else:
-        print(f"Warning: interests_text is not a string.")
+        print("Warning: interests_text is not a string.")
         interests_string = "No specific interests identified"
 
     cell = _safe_get_cell(table, 1, 0)
     if cell:
         _safe_set_text(cell, interests_string)
     else:
-        print(f"Warning: Could not find cell to add interests text.")
+        print("Warning: Could not find cell to add interests text.")
 
 
 def conclusion(doc, column, list_items):
@@ -554,26 +552,6 @@ def conclusion(doc, column, list_items):
             _safe_add_paragraph(cell, f"•  {str(point)}")
 
 
-# Last style improvements
-def replace_and_format_header_text(doc, new_text):
-    """Replaces header text and formats it."""
-    for section in doc.sections:
-        header = section.header
-        for paragraph in header.paragraphs:
-            if "***" in paragraph.text:
-                paragraph.text = paragraph.text.replace("***", new_text)
-                for run in paragraph.runs:
-                    run.font.name = "Montserrat"
-                    run.font.size = Pt(10)
-                    run.font.color.rgb = RGBColor(*(0xED, 0x6B, 0x55))
-                    run.bold = True
-                    run.italic = False
-                    rFonts = OxmlElement("w:rFonts")
-                    rFonts.set(qn("w:ascii"), "Montserrat SemiBold")
-                    rFonts.set(qn("w:hAnsi"), "Montserrat SemiBold")
-                    run._element.rPr.append(rFonts)
-
-
 def update_language_skills_table(doc, language_levels):
     """
     Updates the language skills table (14th table) with language proficiency levels.
@@ -587,9 +565,6 @@ def update_language_skills_table(doc, language_levels):
     if not table:
         print("Warning: Language skills table not found.")
         return
-
-    # Define language names for row identification
-    language_names = ["Dutch", "French", "English"]
 
     # Valid language levels for matching
     valid_levels = ["A1", "A2", "B1", "B2", "C1", "C2"]

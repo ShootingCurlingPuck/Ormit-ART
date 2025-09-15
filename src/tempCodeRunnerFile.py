@@ -16,15 +16,12 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-import src.write_report_data as data_write_report
-
-# Import write_report modules (MCP and DATA)
-import src.write_report_mcp as mcp_write_report
-
 from .global_signals import global_signals
 from .prompting import send_prompts
 from .redact import redact_folder
 from .report_utils import clean_up, resource_path
+from .write_report_data import update_document as update_data_document
+from .write_report_mcp import update_document as update_mcp_document
 
 # Define paths for resources
 logo_path_abs = "resources/ormittalentV3.png"
@@ -72,7 +69,7 @@ class ProcessingThread(QThread):
             selected_program = self.GUI_data["Traineeship"]
 
             if selected_program == "MCP" or selected_program == "ICP":
-                updated_doc = mcp_write_report.update_document(
+                updated_doc = update_mcp_document(
                     clean_data,
                     self.GUI_data["Applicant Name"],
                     self.GUI_data["Assessor Name"],
@@ -80,7 +77,7 @@ class ProcessingThread(QThread):
                     self.GUI_data["Traineeship"],
                 )
             elif selected_program == "DATA":
-                updated_doc = data_write_report.update_document(
+                updated_doc = update_data_document(
                     clean_data,
                     self.GUI_data["Applicant Name"],
                     self.GUI_data["Assessor Name"],
@@ -92,7 +89,7 @@ class ProcessingThread(QThread):
                 global_signals.update_message.emit(
                     f"Warning: Unknown program '{selected_program}', defaulting to MCP report."
                 )
-                updated_doc = mcp_write_report.update_document(
+                updated_doc = update_mcp_document(
                     clean_data,
                     self.GUI_data["Applicant Name"],
                     self.GUI_data["Assessor Name"],
