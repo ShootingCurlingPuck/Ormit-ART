@@ -1,26 +1,17 @@
 import ast
-import os
-import re
-from datetime import datetime
 
-from docx import Document
-from docx.shared import Inches, Pt, RGBColor
+from docx.document import Document
+from docx.shared import Inches, Pt
+from docx.table import _Cell
 
-from constants import Font, FontSize
-
-from .report_utils import (
-    _safe_add_paragraph,
-    _safe_get_cell,
-    _safe_get_table,
-    _safe_set_text,
-    replace_and_format_header_text,
-    replace_piet_in_list,
-    replace_text_preserving_format,
-    replacePiet,
+from src.constants import Font, FontSize
+from src.report_utils import (
     resource_path,
     restructure_date,
+    safe_get_cell,
+    safe_get_table,
     safe_literal_eval,
-    split_paragraphs_at_marker_and_style,
+    safe_set_text,
 )
 
 DETAILS_TABLE_INDEX = 0
@@ -36,9 +27,9 @@ INTERESTS_TABLE_INDEX = 16
 LANGUAGE_SKILLS_TABLE_INDEX = 14
 
 
-def add_content_cogcaptable(doc, scores_str):
+def add_content_cogcaptable(doc: Document, scores_str: str) -> None:
     """Adds cognitive capacity scores."""
-    table = _safe_get_table(doc, COGCAP_TABLE_INDEX)
+    table = safe_get_table(doc, COGCAP_TABLE_INDEX)
     if not table:
         return
 
@@ -48,41 +39,41 @@ def add_content_cogcaptable(doc, scores_str):
         return
 
     for i in range(6):
-        cell = _safe_get_cell(table, 1, i + 1)
+        cell = safe_get_cell(table, 1, i + 1)
         if cell:
             if i == 0:
-                _safe_set_text(cell, scores[i])
+                safe_set_text(cell, scores[i])
                 paragraph = cell.paragraphs[0]
                 run = paragraph.runs[0]
                 run.bold = True
                 run.underline = True
                 paragraph.alignment = 1
             else:
-                _safe_set_text(cell, scores[i])
+                safe_set_text(cell, scores[i])
                 paragraph = cell.paragraphs[0]
                 paragraph.alignment = 1
 
 
-def add_content_cogcaptable_remark(doc, cogcap_output):
+def add_content_cogcaptable_remark(doc: Document, cogcap_output: str) -> None:
     """Adds remarks to the cognitive capacity table."""
     if not isinstance(cogcap_output, str):
         print("Warning: cogcap_output is not a string.")
         return
 
-    table = _safe_get_table(doc, COGCAP_TABLE_INDEX)
+    table = safe_get_table(doc, COGCAP_TABLE_INDEX)
     if not table:
         return
 
-    remark_cell = _safe_get_cell(table, 2, 1)
+    remark_cell = safe_get_cell(table, 2, 1)
     if not remark_cell:
         return
 
-    _safe_set_text(remark_cell, cogcap_output)
+    safe_set_text(remark_cell, cogcap_output)
 
 
-def add_content_detailstable(doc, personal_details):
+def add_content_detailstable(doc: Document, personal_details: list[str]) -> None:
     """Adds personal details to the first table."""
-    table = _safe_get_table(doc, DETAILS_TABLE_INDEX)
+    table = safe_get_table(doc, DETAILS_TABLE_INDEX)
     if not table:
         return
 
@@ -101,14 +92,14 @@ def add_content_detailstable(doc, personal_details):
             second_cell_text = row.cells[1].text.strip()
 
             if first_cell_text == "Name candidate" and second_cell_text == ":":
-                cell = _safe_get_cell(table, row_index, 2)
-                _safe_set_text(
+                cell = safe_get_cell(table, row_index, 2)
+                safe_set_text(
                     cell, personal_details[0] if len(personal_details) > 0 else ""
                 )
 
             if first_cell_text == "Date of birth" and second_cell_text == ":":
-                cell = _safe_get_cell(table, row_index, 2)
-                _safe_set_text(
+                cell = safe_get_cell(table, row_index, 2)
+                safe_set_text(
                     cell,
                     restructure_date(personal_details[1])
                     if len(personal_details) > 1
@@ -116,14 +107,14 @@ def add_content_detailstable(doc, personal_details):
                 )
 
             if first_cell_text == "Position" and second_cell_text == ":":
-                cell = _safe_get_cell(table, row_index, 2)
-                _safe_set_text(
+                cell = safe_get_cell(table, row_index, 2)
+                safe_set_text(
                     cell, personal_details[2] if len(personal_details) > 2 else ""
                 )
 
             if first_cell_text == "Assessment date" and second_cell_text == ":":
-                cell = _safe_get_cell(table, row_index, 2)
-                _safe_set_text(
+                cell = safe_get_cell(table, row_index, 2)
+                safe_set_text(
                     cell,
                     restructure_date(personal_details[3])
                     if len(personal_details) > 3
@@ -131,13 +122,13 @@ def add_content_detailstable(doc, personal_details):
                 )
 
             if first_cell_text == "Pool" and second_cell_text == ":":
-                cell = _safe_get_cell(table, row_index, 2)
-                _safe_set_text(
+                cell = safe_get_cell(table, row_index, 2)
+                safe_set_text(
                     cell, personal_details[4] if len(personal_details) > 4 else ""
                 )
 
 
-def add_icon_to_cell(cell, score):
+def add_icon_to_cell(cell: _Cell, score: int | None) -> None:
     """
     Adds an icon based on the score to a cell.
 
@@ -148,7 +139,7 @@ def add_icon_to_cell(cell, score):
         print("Warning: add_icon_to_cell called with None cell.")
         return
 
-    _safe_set_text(cell, "")
+    safe_set_text(cell, "")
 
     if score is None or not isinstance(score, int):
         try:
@@ -177,7 +168,7 @@ def add_icon_to_cell(cell, score):
         print(f"Warning: Invalid score value: {score}")
 
 
-def format_datatools_output(datatools_json_string):
+def format_datatools_output(datatools_json_string: str) -> str:
     """Formats data tools output (not used in MCP, kept for consistency)."""
     try:
         return "\n".join(
@@ -189,15 +180,15 @@ def format_datatools_output(datatools_json_string):
 
 
 class ReportWriter:
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
 
 class MgtReportWriter(ReportWriter):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
 
 class DataReportWriter(ReportWriter):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()

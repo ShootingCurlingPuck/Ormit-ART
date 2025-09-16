@@ -3,30 +3,30 @@ import os
 from datetime import datetime
 from typing import Any
 
-from docx import Document
+import docx
+from docx.document import Document
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
-from docx.shared import Inches, Pt
+from docx.shared import Pt
+from docx.table import _Cell
 
-from constants import Gender, Program
+from src.constants import Gender, Program
 
 # Import common functions from report_utils
-from .report_utils import (
-    _safe_get_cell,
-    _safe_get_table,
-    _safe_set_text,
+from src.report_utils import (
     replace_and_format_header_text,
     replace_piet_in_list,
     replace_text_preserving_format,
     replacePiet,
     resource_path,
-    restructure_date,
+    safe_get_cell,
+    safe_get_table,
     safe_literal_eval,
+    safe_set_text,
     split_paragraphs_at_marker_and_style,
 )
-from .write_report_common import (
+from src.write_report_common import (
     add_content_cogcaptable,
-    add_content_cogcaptable_remark,
     add_content_detailstable,
     add_icon_to_cell,
 )
@@ -40,7 +40,7 @@ NUM_ICONS_TABLES = 5
 ITEMS_PER_ICON_TABLE = 4
 
 
-def set_font_properties(cell):
+def set_font_properties(cell: _Cell) -> None:
     """Sets font properties for a cell."""
     for paragraph in cell.paragraphs:
         for run in paragraph.runs:
@@ -57,7 +57,7 @@ def set_font_properties(cell):
             rPr.append(rFonts)
 
 
-def set_font_properties2(para):
+def set_font_properties2(para) -> None:
     """Sets font properties with tabs for language skills."""
     full_text = para.text
     para.clear()
@@ -104,10 +104,10 @@ def update_document(
     assessor: str,
     gender: Gender,
     program: Program,
-):
+) -> str | None:
     """Updates the Word document (MCP version)."""
     try:
-        doc = Document(resource_path("resources/template.docx"))  # MCP Template
+        doc = docx.Document(resource_path("resources/template.docx"))  # MCP Template
     except Exception as e:
         print(f"Error: Failed to open template: {e}")  # Example of console error
         return None
@@ -248,7 +248,7 @@ def format_interests_output(interests_json_string: str) -> str:
         return "Could not parse interests information."
 
 
-def add_icons2(doc, list_scores):
+def add_icons2(doc: Document, list_scores: list[int]) -> None:
     """Adds icons to the profile review tables (MCP version)."""
     if not isinstance(list_scores, list):
         print("Warning: list_scores is not a list.")  # Example of console warning
@@ -257,26 +257,26 @@ def add_icons2(doc, list_scores):
     score_index = 0
     for table_no_offset in range(NUM_ICONS_TABLES):  # Number of tables
         table_no = table_no_start + table_no_offset
-        table = _safe_get_table(doc, table_no)
+        table = safe_get_table(doc, table_no)
         if not table:
             continue  # Skip to next table
 
         for row_no in range(1, len(table.rows)):  # Start from row 1
             if score_index < len(list_scores):  # Check if scores remain
-                cell = _safe_get_cell(table, row_no, 0)  # Get the first cell
+                cell = safe_get_cell(table, row_no, 0)  # Get the first cell
                 if cell:
                     add_icon_to_cell(cell, list_scores[score_index])  # Use function
                     score_index += 1
             else:
                 # If we run out of scores, add N/A for remaining cells
-                cell = _safe_get_cell(table, row_no, 0)
+                cell = safe_get_cell(table, row_no, 0)
                 if cell:
                     run = cell.paragraphs[0].add_run("N/A")
                     run.font.name = "Montserrat Light"
                     run.font.size = Pt(9)
 
 
-def conclusion(doc, column, list_items):
+def conclusion(doc: Document, column: int, list_items: list[str]) -> None:
     """Adds conclusion points (already processed list) to the specified column."""
     try:
         table = doc.tables[CONCLUSION_TABLE_INDEX]
@@ -294,7 +294,7 @@ def conclusion(doc, column, list_items):
     try:
         cell = table.cell(1, column)
         # Clear existing content first
-        _safe_set_text(cell, "")
+        safe_set_text(cell, "")
 
         # Add each item as a separate paragraph with improved bullet formatting
         for point in list_items:

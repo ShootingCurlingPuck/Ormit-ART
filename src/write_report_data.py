@@ -4,29 +4,28 @@ import re
 from datetime import datetime
 from typing import Any
 
-from docx import Document
-from docx.shared import Inches, Pt, RGBColor
+import docx
+from docx.document import Document
+from docx.shared import Pt, RGBColor
 
-from constants import Font, FontSize, Gender, Program
+from src.constants import Font, FontSize, Gender, Program
 
 # Import common functions from report_utils
-from .report_utils import (
-    _safe_add_paragraph,
-    _safe_get_cell,
-    _safe_get_table,
-    _safe_set_text,
+from src.report_utils import (
     replace_and_format_header_text,
     replace_piet_in_list,
     replace_text_preserving_format,
     replacePiet,
     resource_path,
-    restructure_date,
+    safe_add_paragraph,
+    safe_get_cell,
+    safe_get_table,
     safe_literal_eval,
+    safe_set_text,
     split_paragraphs_at_marker_and_style,
 )
-from .write_report_common import (
+from src.write_report_common import (
     add_content_cogcaptable,
-    add_content_cogcaptable_remark,
     add_content_detailstable,
     add_icon_to_cell,
 )
@@ -46,12 +45,12 @@ LANGUAGE_SKILLS_TABLE_INDEX = 14
 
 
 def replace_placeholder_in_docx(
-    doc,
-    placeholder,
-    replacement,
+    doc: Document,
+    placeholder: str,
+    replacement: str,
     font_name: Font = Font.MONTSERRAT_REGULAR,
     font_size: FontSize = FontSize.MEDIUM,
-):
+) -> None:
     """Replaces a placeholder in the document with custom font."""
     for paragraph in doc.paragraphs:
         if placeholder in paragraph.text:
@@ -69,10 +68,12 @@ def update_document(
     assessor: str,
     gender: Gender,
     program: Program,
-):
+) -> str | None:
     """Updates the Word document."""
     try:
-        doc = Document(resource_path("resources/Assessment_report_Data_chiefs.docx"))
+        doc = docx.Document(
+            resource_path("resources/Assessment_report_Data_chiefs.docx")
+        )
     except Exception as e:
         print(f"Error: Failed to open template: {e}")
         return None
@@ -256,7 +257,7 @@ def format_interests_output(interests_json_string: str) -> str:
         return "Could not parse interests information."
 
 
-def add_icons_data_chief(doc, list_scores):
+def add_icons_data_chief(doc: Document, list_scores: list[int]) -> None:
     """Adds icons to Human Skills tables."""
     if not isinstance(list_scores, list):
         print("Warning: list_scores is not a list.")
@@ -265,26 +266,26 @@ def add_icons_data_chief(doc, list_scores):
     score_index = 0
     for table_no_offset in range(HUMAN_SKILLS_TABLE_COUNT):
         table_no = HUMAN_SKILLS_START_TABLE + table_no_offset
-        table = _safe_get_table(doc, table_no)
+        table = safe_get_table(doc, table_no)
         if not table:
             continue
 
         for row_no in range(1, len(table.rows)):
             if score_index < len(list_scores):
-                cell = _safe_get_cell(table, row_no, 0)
+                cell = safe_get_cell(table, row_no, 0)
                 if cell and cell.text.strip().startswith("AA"):
                     add_icon_to_cell(cell, list_scores[score_index])
                     score_index += 1
             else:
                 # If we run out of scores, add N/A for remaining cells
-                cell = _safe_get_cell(table, row_no, 0)
+                cell = safe_get_cell(table, row_no, 0)
                 if cell and cell.text.strip().startswith("AA"):
                     run = cell.paragraphs[0].add_run("N/A")
                     run.font.name = "Montserrat"
                     run.font.size = Pt(9)
 
 
-def add_icons_data_chief_2(doc, list_scores):
+def add_icons_data_chief_2(doc: Document, list_scores: list[int]) -> None:
     """Adds icons to Technical Skills tables."""
     if not isinstance(list_scores, list):
         print("Warning: list_scores is not a list.")
@@ -293,26 +294,26 @@ def add_icons_data_chief_2(doc, list_scores):
     score_index = 0
     for table_no_offset in range(TECH_SKILLS_TABLE_COUNT):
         table_no = TECH_SKILLS_START_TABLE + table_no_offset
-        table = _safe_get_table(doc, table_no)
+        table = safe_get_table(doc, table_no)
         if not table:
             continue
 
         for row_no in range(1, len(table.rows)):
             if score_index < len(list_scores):
-                cell = _safe_get_cell(table, row_no, 0)
+                cell = safe_get_cell(table, row_no, 0)
                 if cell and cell.text.strip().startswith("AA"):
                     add_icon_to_cell(cell, list_scores[score_index])
                     score_index += 1
             else:
                 # If we run out of scores, add N/A for remaining cells
-                cell = _safe_get_cell(table, row_no, 0)
+                cell = safe_get_cell(table, row_no, 0)
                 if cell and cell.text.strip().startswith("AA"):
                     run = cell.paragraphs[0].add_run("N/A")
                     run.font.name = "Montserrat"
                     run.font.size = Pt(9)
 
 
-def add_icons_data_tools(doc, list_scores):
+def add_icons_data_tools(doc: Document, list_scores: list[int | None]) -> None:
     """Adds icons to Data Tools tables."""
     if not isinstance(list_scores, list):
         print("Warning: list_scores is not a list.")
@@ -329,18 +330,18 @@ def add_icons_data_tools(doc, list_scores):
         table_no = DATA_TOOLS_TABLE_START + (i // DATA_TOOLS_ITEMS_PER_TABLE)
         row_no = (i % DATA_TOOLS_ITEMS_PER_TABLE) + 2
 
-        table = _safe_get_table(doc, table_no)
+        table = safe_get_table(doc, table_no)
         if not table:
             continue
 
-        cell = _safe_get_cell(table, row_no, 0)
+        cell = safe_get_cell(table, row_no, 0)
         if cell:
             add_icon_to_cell(cell, list_scores[i])
 
 
-def add_interests_table(doc, interests_text):
+def add_interests_table(doc: Document, interests_text: str) -> None:
     """Fills in interests into the Interests Table as comma-separated text."""
-    table = _safe_get_table(doc, INTERESTS_TABLE_INDEX)
+    table = safe_get_table(doc, INTERESTS_TABLE_INDEX)
     if not table:
         return
 
@@ -392,16 +393,16 @@ def add_interests_table(doc, interests_text):
         print("Warning: interests_text is not a string.")
         interests_string = "No specific interests identified"
 
-    cell = _safe_get_cell(table, 1, 0)
+    cell = safe_get_cell(table, 1, 0)
     if cell:
-        _safe_set_text(cell, interests_string)
+        safe_set_text(cell, interests_string)
     else:
         print("Warning: Could not find cell to add interests text.")
 
 
-def conclusion(doc, column, list_items):
+def conclusion(doc: Document, column: int, list_items: list[Any]) -> None:
     """Adds conclusion points (already processed list) to the specified column."""
-    table = _safe_get_table(doc, CONCLUSION_TABLE_INDEX)
+    table = safe_get_table(doc, CONCLUSION_TABLE_INDEX)
     if not table:
         return
 
@@ -410,23 +411,23 @@ def conclusion(doc, column, list_items):
         print(f"Warning: conclusion expected a list, got {type(list_items)}")
         return
 
-    cell = _safe_get_cell(table, 1, column)
+    cell = safe_get_cell(table, 1, column)
     if not cell:
         return
     # Clear cell content first
-    _safe_set_text(cell, "")
+    safe_set_text(cell, "")
 
     # Add each item as a separate paragraph with bullet formatting
     # We use _safe_add_paragraph which applies basic font, style is handled by cell/table
     for point in list_items:
         if isinstance(point, str):
             # Add pseudo-bullet for visual consistency within the table cell
-            _safe_add_paragraph(cell, f"•  {point}")
+            safe_add_paragraph(cell, f"•  {point}")
         elif point:  # Handle non-string items if necessary
-            _safe_add_paragraph(cell, f"•  {str(point)}")
+            safe_add_paragraph(cell, f"•  {str(point)}")
 
 
-def update_language_skills_table(doc, language_levels):
+def update_language_skills_table(doc: Document, language_levels: list[str]) -> None:
     """
     Updates the language skills table (14th table) with language proficiency levels.
 
@@ -435,7 +436,7 @@ def update_language_skills_table(doc, language_levels):
         language_levels: List of language levels [Dutch, French, English]
     """
     # Get the language skills table (14th table)
-    table = _safe_get_table(doc, LANGUAGE_SKILLS_TABLE_INDEX)
+    table = safe_get_table(doc, LANGUAGE_SKILLS_TABLE_INDEX)
     if not table:
         print("Warning: Language skills table not found.")
         return
@@ -514,7 +515,7 @@ def update_language_skills_table(doc, language_levels):
             language_prefix = original_text.split("A1/B1/B2")[0].strip()
 
             # Set the text to include both the language name and the level
-            _safe_set_text(first_cell, "")
+            safe_set_text(first_cell, "")
             para = first_cell.paragraphs[0]
 
             # Add language name with original formatting
@@ -530,7 +531,7 @@ def update_language_skills_table(doc, language_levels):
             run_level.font.bold = True
         else:
             # Just set the level if we don't find the expected placeholder
-            _safe_set_text(first_cell, normalized_level)
+            safe_set_text(first_cell, normalized_level)
             run = (
                 first_cell.paragraphs[0].runs[0]
                 if first_cell.paragraphs[0].runs
@@ -552,7 +553,7 @@ def update_language_skills_table(doc, language_levels):
                 # Format the cell based on whether it matches the candidate's level
                 if cell_text.upper() == normalized_level:
                     # Highlight the matched level
-                    _safe_set_text(cell, "")
+                    safe_set_text(cell, "")
                     para = cell.paragraphs[0]
                     run = para.add_run(normalized_level)
                     run.font.name = "Montserrat"
@@ -561,7 +562,7 @@ def update_language_skills_table(doc, language_levels):
                     run.font.color.rgb = RGBColor(0, 0, 0)  # Black
                 else:
                     # Keep the placeholder for other levels, but make it less prominent
-                    _safe_set_text(cell, "")
+                    safe_set_text(cell, "")
                     para = cell.paragraphs[0]
                     run = para.add_run(cell_text)
                     run.font.name = "Montserrat"

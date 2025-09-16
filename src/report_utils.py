@@ -14,11 +14,14 @@ import sys
 from datetime import datetime
 from typing import Any
 
+from docx.document import Document
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Pt, RGBColor
+from docx.table import Table, _Cell
+from docx.text.run import Run
 
-from .constants import Font, FontSize, Gender
+from src.constants import Font, FontSize, Gender
 
 
 def resource_path(relative_path: str) -> str:
@@ -36,7 +39,7 @@ def resource_path(relative_path: str) -> str:
 
 
 # --- Document Handling Functions ---
-def _safe_get_table(doc, table_index, default=None):
+def safe_get_table(doc: Document, table_index: int, default: Any = None) -> Table | Any:
     """
     Safely retrieves a table, returning default if not found.
 
@@ -55,7 +58,9 @@ def _safe_get_table(doc, table_index, default=None):
         return default
 
 
-def _safe_get_cell(table, row_index, col_index, default=None):
+def safe_get_cell(
+    table: Table, row_index: int, col_index: int, default: Any = None
+) -> _Cell | Any:
     """
     Safely retrieves a cell, returning default if not found.
 
@@ -75,7 +80,7 @@ def _safe_get_cell(table, row_index, col_index, default=None):
         return default
 
 
-def _safe_set_text(cell, text):
+def safe_set_text(cell: _Cell, text: str) -> None:
     """
     Safely sets cell text, clearing existing content.
 
@@ -93,7 +98,7 @@ def _safe_set_text(cell, text):
         run.font.size = Pt(FontSize.MEDIUM.value)
 
 
-def _safe_add_paragraph(cell, text):
+def safe_add_paragraph(cell: _Cell, text: str) -> None:
     """
     Safely adds a paragraph to a cell with proper formatting.
 
@@ -151,7 +156,7 @@ def safe_literal_eval(s: str, default: Any | None = None) -> Any:
         return default
 
 
-def format_bullet_points(text):
+def format_bullet_points(text: str) -> str:
     """
     Formats text with bullet points to ensure proper bullet characters (* -> •).
     It retains single newlines for separation, which add_bulleted_content will handle.
@@ -167,7 +172,7 @@ def format_bullet_points(text):
 
     # Split the text into lines
     lines = text.split("\n")
-    formatted_lines = []
+    formatted_lines: list[str] = []
 
     for line in lines:
         line = line.strip()
@@ -193,7 +198,7 @@ def format_bullet_points(text):
     return "\n".join(formatted_lines)
 
 
-def shuttle_text(shuttle):
+def shuttle_text(shuttle: list[Run]) -> str:
     """Helper function to get combined text from a list of runs."""
     t = ""
     for run in shuttle:
@@ -201,7 +206,7 @@ def shuttle_text(shuttle):
     return t
 
 
-def replace_text_preserving_format(doc, data):
+def replace_text_preserving_format(doc: Document, data: dict[str, str]) -> None:
     """
     Replaces text in paragraphs and tables, preserving formatting.
     Handles cases where the text to replace spans multiple runs.
@@ -321,7 +326,7 @@ def replace_text_preserving_format(doc, data):
 # def add_bulleted_content(doc, content, target_paragraph=None): ...
 
 
-def split_paragraphs_and_apply_styles(doc):
+def split_paragraphs_and_apply_styles(doc: Document) -> None:
     """
     Iterates through the document, splits paragraphs containing '<<BREAK>>',
     and applies 'List Bullet' style to lines starting with '•'.
@@ -399,7 +404,7 @@ def split_paragraphs_and_apply_styles(doc):
 
 
 # --- Text Processing Functions ---
-def clean(text):
+def clean(text: str) -> str:
     """
     Cleans input text by removing markdown and special characters.
 
@@ -416,7 +421,7 @@ def clean(text):
     )
 
 
-def strip_extra_quotes(input_string):
+def strip_extra_quotes(input_string: str) -> str:
     """
     Removes leading/trailing double quotes.
 
@@ -435,7 +440,7 @@ def strip_extra_quotes(input_string):
     return input_string
 
 
-def replacePiet(text: str, name: str, gender: Gender):
+def replacePiet(text: str, name: str, gender: Gender) -> str:
     """
     Replaces 'Piet' and handles gender-specific pronouns.
 
@@ -524,7 +529,7 @@ def restructure_date(date_str: str) -> str:
             return ""
 
 
-def replace_and_format_header_text(doc, new_text):
+def replace_and_format_header_text(doc: Document, new_text: str) -> None:
     """
     Replaces header text and formats it with correct styling.
 
@@ -590,7 +595,7 @@ def clean_up(loc_dic: str) -> dict[str, Any]:
         return {}
 
 
-def open_file(file_path: str):
+def open_file(file_path: str) -> None:
     """
     Opens file based on OS.
 
@@ -606,7 +611,7 @@ def open_file(file_path: str):
         os.system(f'open "{file_path}"')
 
 
-def split_paragraphs_at_marker_and_style(doc):
+def split_paragraphs_at_marker_and_style(doc: Document) -> None:
     """
     Iterates through the document, splits paragraphs containing '<<BREAK>>',
     creates new paragraphs, and applies 'List Bullet' style to lines starting with '•'.

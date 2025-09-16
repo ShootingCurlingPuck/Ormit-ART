@@ -4,16 +4,17 @@ import os
 import re
 import time
 from datetime import datetime
+from typing import Any
 
 import pypdf as PyPDF2
 from docx import Document
 from google import genai
 from google.genai import types as genai_types
 
-from .constants import Program, PromptName
-from .data_models import GuiData, IcpGuiData
-from .global_signals import global_signals
-from .prompts import prompts
+from src.constants import Program, PromptName
+from src.data_models import GuiData, IcpGuiData
+from src.global_signals import global_signals
+from src.prompts import prompts
 
 # Set the default Gemini model for all prompts
 default_model = "gemini-2.5-flash-preview-04-17"
@@ -437,7 +438,7 @@ Specific Instructions:
                 full_prompt_retry = f"{final_prompt_text_retry}\n\nUse the following files to complete the tasks. Do not give any output for this prompt.\n{general_context}"
 
                 try:
-                    response = client.models.generate_content(  # type: ignore
+                    response = client.models.generate_content(
                         model=default_model,
                         contents=full_prompt_retry,
                         config=generation_config,
@@ -483,7 +484,7 @@ Specific Instructions:
 
     # --- End Retry Logic ---
 
-    def process_prompt_results(results: dict[PromptName, str]):
+    def process_prompt_results(results: dict[PromptName, str]) -> dict[Any, str]:
         """Process the results from the prompts to ensure proper formatting."""
 
         # Format personality section (prompt3_personality) for template insertion

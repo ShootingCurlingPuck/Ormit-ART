@@ -1,5 +1,7 @@
 import ast
+import os
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import Any, Literal
 
 import docx
@@ -7,12 +9,27 @@ from docx.document import Document
 from docx.shared import Inches, Pt
 from docx.table import _Cell
 
-from .constants import LANGUAGES, Font, FontSize, Gender, Program, PromptName
-from .report_utils import (
+from src.constants import LANGUAGES, Font, FontSize, Gender, Program, PromptName
+from src.report_utils import (
+    replace_and_format_header_text,
+    replace_piet_in_list,
+    replace_text_preserving_format,
+    replacePiet,
     resource_path,
     safe_get_cell,
     safe_get_table,
+    safe_literal_eval,
     safe_set_text,
+    split_paragraphs_at_marker_and_style,
+)
+from src.write_report_common import add_content_cogcaptable, add_content_detailstable
+from src.write_report_data import (
+    add_icons_data_chief,
+    add_icons_data_chief_2,
+    add_icons_data_tools,
+    add_interests_table,
+    conclusion,
+    update_language_skills_table,
 )
 
 COGCAP_TABLE_INDEX = 1
@@ -43,10 +60,17 @@ class ReportWriter(ABC):
         self.doc = docx.Document(file_path)
 
     @abstractmethod
-    def _update_document(self):
+    def _update_document(
+        self,
+        output_dic: dict[PromptName, Any],
+        name: str,
+        assessor: str,
+        gender: Gender,
+        program: Program,
+    ) -> str | None:
         pass
 
-    def write_report(self):
+    def write_report(self) -> None:
         pass
 
     def _add_content_cogcaptable(self, scores: list[int]) -> Document:
@@ -63,7 +87,7 @@ class ReportWriter(ABC):
             cell = safe_get_cell(table, 1, i + 1)
             if cell is None:
                 continue
-            cell = safe_set_text(cell, str(scores[i]))
+            safe_set_text(cell, str(scores[i]))
             paragraph = cell.paragraphs[0]
             paragraph.alignment = 1
             if i == 0:
@@ -117,7 +141,7 @@ class ReportWriter(ABC):
             if second_cell_text != ":" or cell is None or personal_detail is None:
                 continue
 
-            cell = safe_set_text(cell, personal_detail)
+            safe_set_text(cell, personal_detail)
 
         return self.doc
 
@@ -126,7 +150,7 @@ class ReportWriter(ABC):
     ) -> Document:
         """Adds an icon based on the score to a cell."""
 
-        cell = safe_set_text(cell, "")
+        safe_set_text(cell, "")
 
         if score is None:
             run = cell.paragraphs[0].add_run("N/A")
@@ -162,7 +186,7 @@ class DataReportWriter(ReportWriter):
         assessor: str,
         gender: Gender,
         program: Program,
-    ):
+    ) -> str | None:
         """Updates the Word document."""
         try:
             doc = docx.Document(

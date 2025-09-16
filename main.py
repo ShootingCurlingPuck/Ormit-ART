@@ -22,8 +22,8 @@ from PyQt6.QtWidgets import (
 
 import src.write_report_data as data_write_report
 import src.write_report_mcp as mcp_write_report
-from data_models import GuiData, IcpGuiData
 from src.constants import Gender, Program
+from src.data_models import GuiData, IcpGuiData
 from src.global_signals import global_signals
 from src.prompting import send_prompts
 from src.redact import redact_folder
@@ -44,14 +44,14 @@ class ProcessingThread(QThread):
         super().__init__()
         self.GUI_data = GUI_data
 
-    def run(self):
+    def run(self) -> None:
         try:
             # Create temp directory if it doesn't exist
             if not os.path.exists("temp"):
                 os.makedirs("temp")
 
             # Check if all required files exist
-            for _, file_path in self.GUI_data["files"].items():
+            for _, file_path in self.GUI_data.files.items():
                 if not os.path.exists(file_path):
                     global_signals.update_message.emit(
                         f"Error: File not found: {file_path}"
@@ -69,23 +69,23 @@ class ProcessingThread(QThread):
             # Convert JSON to report
             global_signals.update_message.emit("Generating report...")
             clean_data = clean_up(output_path)
-            selected_program = self.GUI_data["traineeship"]
+            selected_program = self.GUI_data.traineeship
 
             if selected_program == Program.MNGT or selected_program == Program.ICP:
                 updated_doc = mcp_write_report.update_document(
                     clean_data,
-                    self.GUI_data["applicant_name"],
-                    self.GUI_data["assessor_name"],
-                    self.GUI_data["gender"],
-                    self.GUI_data["traineeship"],
+                    self.GUI_data.applicant_name,
+                    self.GUI_data.assessor_name,
+                    self.GUI_data.gender,
+                    self.GUI_data.traineeship,
                 )
             elif selected_program == Program.DATA:
                 updated_doc = data_write_report.update_document(
                     clean_data,
-                    self.GUI_data["applicant_name"],
-                    self.GUI_data["assessor_name"],
-                    self.GUI_data["gender"],
-                    self.GUI_data["traineeship"],
+                    self.GUI_data.applicant_name,
+                    self.GUI_data.assessor_name,
+                    self.GUI_data.gender,
+                    self.GUI_data.traineeship,
                 )
             else:
                 # Default fallback (can remain MCP or be made more specific if needed)
@@ -94,10 +94,10 @@ class ProcessingThread(QThread):
                 )
                 updated_doc = mcp_write_report.update_document(
                     clean_data,
-                    self.GUI_data["applicant_name"],
-                    self.GUI_data["assessor_name"],
-                    self.GUI_data["gender"],
-                    self.GUI_data["traineeship"],
+                    self.GUI_data.applicant_name,
+                    self.GUI_data.assessor_name,
+                    self.GUI_data.gender,
+                    self.GUI_data.traineeship,
                 )
 
             if updated_doc:
@@ -356,7 +356,7 @@ Cons: Slower response, higher cost.""")
         # Initialize UI based on default selection
         self.handle_program_change()
 
-    def refresh_message_box(self, message: str):
+    def refresh_message_box(self, message: str) -> None:
         self.msg_box.setText(message)
         # Make sure the message box is visible
         if not self.msg_box.isVisible():
@@ -364,11 +364,11 @@ Cons: Slower response, higher cost.""")
         # Force update of the UI
         QApplication.processEvents()
 
-    def close_application(self):
+    def close_application(self) -> None:
         # This will close the application when the messagebox is closed manually
         QApplication.quit()
 
-    def handle_program_change(self):
+    def handle_program_change(self) -> None:
         """Shows or hides ICP-specific widgets based on program selection."""
         selected_program = self.program_combo.currentText()
         # print(f"handle_program_change called. Selected program: {selected_program}") # Keep DEBUG if needed
@@ -388,7 +388,7 @@ Cons: Slower response, higher cost.""")
         self.icp_desc_label.setVisible(is_icp)
         # print("ICP Widget visibility set.") # Keep DEBUG if needed
 
-    def open_file_dialog(self, file_index: int):
+    def open_file_dialog(self, file_index: int) -> None:
         dialog = QFileDialog(self)
         dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
         if file_index == 4:
@@ -429,7 +429,7 @@ Cons: Slower response, higher cost.""")
                     self.submitbtn.show()
                 # Submit button remains hidden otherwise
 
-    def _load_saved_key(self):
+    def _load_saved_key(self) -> None:
         try:
             if os.path.exists(self.KEY_FILE):
                 with open(self.KEY_FILE, "r") as f:
@@ -439,7 +439,7 @@ Cons: Slower response, higher cost.""")
         except Exception as e:
             print(f"Warning: Could not load saved Gemini key: {e}")
 
-    def _save_key(self, key: str):
+    def _save_key(self, key: str) -> None:
         try:
             with open(self.KEY_FILE, "w") as f:
                 f.write(key.strip())
@@ -451,7 +451,7 @@ Cons: Slower response, higher cost.""")
         except Exception as e:
             print(f"Warning: Could not save Gemini key: {e}")
 
-    def handle_submit(self):
+    def handle_submit(self) -> None:
         # Validate input
         if not self.openai_key_input.text().strip():
             QMessageBox.warning(self, "Missing Input", "Please enter a Gemini API key.")
@@ -521,7 +521,7 @@ Cons: Slower response, higher cost.""")
                 return
             # Gather text from the THREE specific input fields
             GUI_data = IcpGuiData(
-                **GUI_data,
+                **GUI_data.__dict__,
                 icp_info_prompt3=self.icp_info_prompt3_input.text().strip(),
                 icp_info_prompt6a=self.icp_info_prompt6a_input.text().strip(),
                 icp_info_prompt6b=self.icp_info_prompt6b_input.text().strip(),
@@ -538,7 +538,7 @@ Cons: Slower response, higher cost.""")
         )
         self.processing_thread.start()
 
-    def on_processing_completed(self, updated_doc: str):
+    def on_processing_completed(self, updated_doc: str) -> None:
         self.msg_box.close()
         if updated_doc and os.path.exists(updated_doc):
             os.startfile(updated_doc)

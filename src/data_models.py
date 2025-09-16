@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from constants import Gender, Program, PromptName
+from src.constants import Gender, Program, PromptName
 
 
 @dataclass

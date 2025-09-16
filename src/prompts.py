@@ -1,5 +1,5 @@
-from constants import PromptName
-from data_models import Prompt
+from src.constants import PromptName
+from src.data_models import Prompt
 
 prompts = [
     Prompt(
