@@ -541,7 +541,10 @@ Cons: Slower response, higher cost.""")
     def on_processing_completed(self, updated_doc: str) -> None:
         self.msg_box.close()
         if updated_doc and os.path.exists(updated_doc):
-            os.startfile(updated_doc)
+            if os.name == "nt":  # Windows
+                os.startfile(updated_doc)
+            elif os.name == "posix":  # macOS, Linux
+                os.system(f'open "{updated_doc}"')
         elif updated_doc:
             QMessageBox.warning(
                 self,
