@@ -58,9 +58,7 @@ def safe_get_table(doc: Document, table_index: int, default: Any = None) -> Tabl
         return default
 
 
-def safe_get_cell(
-    table: Table, row_index: int, col_index: int, default: Any = None
-) -> _Cell | Any:
+def safe_get_cell(table: Table, row_index: int, col_index: int, default: Any = None) -> _Cell | Any:
     """
     Safely retrieves a cell, returning default if not found.
 
@@ -178,9 +176,7 @@ def format_bullet_points(text: str) -> str:
         line = line.strip()
         if not line:
             # Keep single empty lines if they exist between points, but don't add extra
-            if (
-                formatted_lines and formatted_lines[-1]
-            ):  # Check if the last added line wasn't empty
+            if formatted_lines and formatted_lines[-1]:  # Check if the last added line wasn't empty
                 formatted_lines.append("")
             continue
 
@@ -373,9 +369,9 @@ def split_paragraphs_and_apply_styles(doc: Document) -> None:
                 current_p_element = new_para._element  # Update reference point
 
             # Re-apply font to the original (now modified) paragraph and new ones
-            all_paras_to_style = [para] + list(
-                para._element.xpath("following-sibling::w:p")
-            )[: len(parts) - 1]
+            all_paras_to_style = [para] + list(para._element.xpath("following-sibling::w:p"))[
+                : len(parts) - 1
+            ]
             for p_to_style in all_paras_to_style:
                 # Convert element back to Paragraph object if needed, or apply style via XML
                 # For simplicity, let's re-fetch the paragraph object if possible (might be slow)
@@ -655,9 +651,7 @@ def split_paragraphs_at_marker_and_style(doc: Document) -> None:
                     # Apply style (List Bullet or Normal) via XML
                     pPr = OxmlElement("w:pPr")
                     pStyle = OxmlElement("w:pStyle")
-                    style_name = (
-                        "List Bullet" if stripped_part.startswith("•") else "Normal"
-                    )
+                    style_name = "List Bullet" if stripped_part.startswith("•") else "Normal"
                     pStyle.set(qn("w:val"), style_name)
                     pPr.append(pStyle)
                     # If bullet style, add numbering properties (assuming ID 1 again)
@@ -680,9 +674,7 @@ def split_paragraphs_at_marker_and_style(doc: Document) -> None:
                     rFonts.set(qn("w:ascii"), Font.MONTSERRAT_REGULAR.value)
                     rFonts.set(qn("w:hAnsi"), Font.MONTSERRAT_REGULAR.value)
                     sz = OxmlElement("w:sz")
-                    sz.set(
-                        qn("w:val"), f"{FontSize.MEDIUM.value * 2}"
-                    )  # Size in half-points
+                    sz.set(qn("w:val"), f"{FontSize.MEDIUM.value * 2}")  # Size in half-points
                     rPr_run.append(rFonts)
                     rPr_run.append(sz)
                     run_element.append(rPr_run)
