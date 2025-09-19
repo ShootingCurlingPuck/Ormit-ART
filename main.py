@@ -22,7 +22,13 @@ from PyQt6.QtWidgets import (
 
 import src.write_report_data as data_write_report
 import src.write_report_mcp as mcp_write_report
-from src.constants import Gender, Program, FileTypeFilter, FileCategory
+from src.constants import (
+    REQUIRED_FILE_CATEGORIES,
+    FileCategory,
+    FileTypeFilter,
+    Gender,
+    Program,
+)
 from src.data_models import GuiData, IcpGuiData
 from src.global_signals import global_signals
 from src.prompting import send_prompts
@@ -277,17 +283,23 @@ Cons: Slower response, higher cost.""")
         # File selection buttons
         self.selected_files: dict[FileCategory, str] = {}
         self.file_browser_btn1 = QPushButton("No file selected")
-        self.file_browser_btn1.clicked.connect(lambda: self.open_file_dialog(self.file_browser_btn1, FileCategory.PAPI))
+        self.file_browser_btn1.clicked.connect(
+            lambda: self.open_file_dialog(self.file_browser_btn1, FileCategory.PAPI)
+        )
         layout.addWidget(self.file_label1, 7, 0)
         layout.addWidget(self.file_browser_btn1, 7, 1, 1, 2)
 
         self.file_browser_btn2 = QPushButton("No file selected")
-        self.file_browser_btn2.clicked.connect(lambda: self.open_file_dialog(self.file_browser_btn2, FileCategory.COG))
+        self.file_browser_btn2.clicked.connect(
+            lambda: self.open_file_dialog(self.file_browser_btn2, FileCategory.COG)
+        )
         layout.addWidget(self.file_label2, 8, 0)
         layout.addWidget(self.file_browser_btn2, 8, 1, 1, 2)
 
         self.file_browser_btn3 = QPushButton("No file selected")
-        self.file_browser_btn3.clicked.connect(lambda: self.open_file_dialog(self.file_browser_btn3, FileCategory.NOTES))
+        self.file_browser_btn3.clicked.connect(
+            lambda: self.open_file_dialog(self.file_browser_btn3, FileCategory.NOTES)
+        )
         layout.addWidget(self.file_label3, 9, 0)
         layout.addWidget(self.file_browser_btn3, 9, 1, 1, 2)
 
@@ -336,7 +348,11 @@ Cons: Slower response, higher cost.""")
         # ICP Description File Button/Label
         self.icp_desc_button = QPushButton("No file selected (Required for ICP)")
         self.icp_desc_button.setVisible(False)
-        self.icp_desc_button.clicked.connect(lambda: self.open_file_dialog(self.icp_desc_button, FileCategory.ICP, FileTypeFilter.WORD))
+        self.icp_desc_button.clicked.connect(
+            lambda: self.open_file_dialog(
+                self.icp_desc_button, FileCategory.ICP, FileTypeFilter.WORD
+            )
+        )
 
         self.icp_desc_label = QLabel(FileCategory.ICP, self)
         self.icp_desc_label.setVisible(False)
@@ -388,7 +404,12 @@ Cons: Slower response, higher cost.""")
         self.icp_desc_label.setVisible(is_icp)
         # print("ICP Widget visibility set.") # Keep DEBUG if needed
 
-    def open_file_dialog(self, file_selector_button: QPushButton, file_cat: FileCategory, file_type_filter = FileTypeFilter.PDF) -> None:
+    def open_file_dialog(
+        self,
+        file_selector_button: QPushButton,
+        file_cat: FileCategory,
+        file_type_filter=FileTypeFilter.PDF,
+    ) -> None:
         dialog = QFileDialog(self)
         dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
         dialog.setNameFilter(file_type_filter)
@@ -404,7 +425,9 @@ Cons: Slower response, higher cost.""")
                 self.selected_files[file_cat] = selected_file
 
                 # Check if standard files are selected to show submit button
-                standard_files_selected = all(key in self.selected_files for key in FileCategory if key != FileCategory.ICP)
+                standard_files_selected = all(
+                    key in self.selected_files for key in REQUIRED_FILE_CATEGORIES
+                )
                 if standard_files_selected:
                     self.submitbtn.show()
                 # Submit button remains hidden otherwise
@@ -457,10 +480,9 @@ Cons: Slower response, higher cost.""")
             return
 
         # Check if all required files are selected
-        required_files = [FileCategory.PAPI, FileCategory.COG, FileCategory.NOTES]
         missing_files = [
             f
-            for f in required_files
+            for f in REQUIRED_FILE_CATEGORIES
             if f not in self.selected_files or not self.selected_files[f]
         ]
 

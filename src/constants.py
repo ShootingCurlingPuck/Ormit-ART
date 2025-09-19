@@ -12,9 +12,11 @@ class Gender(StrEnum):
     F = "F"
     X = "X"
 
+
 class FileTypeFilter(StrEnum):
     WORD = "Word Files (*.docx);;All Files (*)"
     PDF = "PDF Files (*.pdf);;All Files (*)"
+
 
 class FileCategory(StrEnum):
     PAPI = "PAPI Gebruikersrapport"
@@ -66,3 +68,6 @@ class PromptName(StrEnum):
 
 
 LANGUAGES = [language for language in Language]
+REQUIRED_FILE_CATEGORIES = [
+    file_category for file_category in FileCategory if file_category != FileCategory.ICP
+]
