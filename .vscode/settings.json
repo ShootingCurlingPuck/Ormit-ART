@@ -1,0 +1,40 @@
+{
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "always"
+        },
+    },
+    "github.copilot.enable": {
+        "*": true,
+        "plaintext": true,
+        "markdown": false,
+        "scminput": false,
+        "python": true
+    },
+    "python.analysis.diagnosticMode": "workspace",
+    "diffEditor.ignoreTrimWhitespace": false,
+    "python.analysis.autoFormatStrings": true,
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.completeFunctionParens": true,
+    "python.analysis.typeCheckingMode": "standard",
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true,
+    "autoimport.doubleQuotes": true,
+    "editor.rulers": [
+        100
+    ],
+    "git.suggestSmartCommit": false,
+    "editor.unicodeHighlight.invisibleCharacters": false,
+    "autoDocstring.docstringFormat": "numpy",
+    "json.maxItemsComputed": 10000,
+    "editor.codeActionsOnSave": {},
+    "workbench.editor.empty.hint": "hidden",
+    "github.copilot.advanced": {},
+    "python.analysis.aiCodeActions": {
+        "implementAbstractClasses": true,
+        "generateSymbol": true,
+        "convertFormatString": true
+    },
+}

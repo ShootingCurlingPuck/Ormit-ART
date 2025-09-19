@@ -4,5 +4,4 @@ dist/
 output_reports/
 temp/
 *.pyc
-*.json
 .venv
