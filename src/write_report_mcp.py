@@ -133,9 +133,7 @@ def update_document(
             "prompt3_personality",
             "prompt4_cogcap_remarks",
         ]:
-            replacement_text = replacePiet(
-                replacement_text, name, gender
-            )  # Apply replacePiet
+            replacement_text = replacePiet(replacement_text, name, gender)  # Apply replacePiet
         # Add to dictionary using the placeholder format {key}
         replacements[f"{{{prompt_key}}}"] = replacement_text
 
@@ -147,7 +145,9 @@ def update_document(
         for index, language_name in enumerate(language_names):
             if index < len(language_levels):
                 proficiency_level = language_levels[index]
-                placeholder = f"{{prompt5_language_{language_name.lower()}}}"  # Placeholder per language
+                placeholder = (
+                    f"{{prompt5_language_{language_name.lower()}}}"  # Placeholder per language
+                )
                 replacements[placeholder] = proficiency_level
             else:
                 print(
@@ -173,9 +173,7 @@ def update_document(
                 list_items_pietless = replace_piet_in_list(list_items, name, gender)
                 output_dic[original_key] = list_items_pietless
             else:
-                print(
-                    f"Warning: Could not process {original_key} as a list after eval."
-                )
+                print(f"Warning: Could not process {original_key} as a list after eval.")
                 output_dic[original_key] = []
         else:
             output_dic[original_key] = []
@@ -231,8 +229,7 @@ def format_datatools_output(datatools_json_string: str) -> str:
     """Formats data tools output (not used in MCP, kept for consistency)."""
     try:
         return "\n".join(
-            f"- {tool}: {level}"
-            for tool, level in ast.literal_eval(datatools_json_string).items()
+            f"- {tool}: {level}" for tool, level in ast.literal_eval(datatools_json_string).items()
         )
     except (ValueError, SyntaxError):
         return "Could not parse data tools information."
@@ -241,9 +238,7 @@ def format_datatools_output(datatools_json_string: str) -> str:
 def format_interests_output(interests_json_string: str) -> str:
     """Formats interests output (not directly used in MCP, kept for consistency)."""
     try:
-        return "\n".join(
-            f"- {interest}" for interest in ast.literal_eval(interests_json_string)
-        )
+        return "\n".join(f"- {interest}" for interest in ast.literal_eval(interests_json_string))
     except (ValueError, SyntaxError):
         return "Could not parse interests information."
 
@@ -281,9 +276,7 @@ def conclusion(doc: Document, column: int, list_items: list[str]) -> None:
     try:
         table = doc.tables[CONCLUSION_TABLE_INDEX]
     except IndexError:
-        print(
-            f"Warning: Could not find conclusion table at index {CONCLUSION_TABLE_INDEX}"
-        )
+        print(f"Warning: Could not find conclusion table at index {CONCLUSION_TABLE_INDEX}")
         return
 
     # Expecting list_items to be a Python list already

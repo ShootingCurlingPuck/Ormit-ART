@@ -11,7 +11,7 @@ from docx import Document
 from google import genai
 from google.genai import types as genai_types
 
-from src.constants import Program, PromptName
+from src.constants import FileCategory, Program, PromptName
 from src.data_models import GuiData, IcpGuiData
 from src.global_signals import global_signals
 from src.prompts import prompts
@@ -92,9 +92,7 @@ def send_prompts(data: GuiData | IcpGuiData) -> str:
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     # Set the file path to be in the output directory
-    filename_with_timestamp = os.path.join(
-        output_dir, f"{appl_name}_{formatted_time}.json"
-    )
+    filename_with_timestamp = os.path.join(output_dir, f"{appl_name}_{formatted_time}.json")
 
     path_to_notes = r"temp/Assessment Notes.pdf"
     path_to_persontest = r"temp/PAPI Gebruikersrapport.pdf"
@@ -133,23 +131,19 @@ def send_prompts(data: GuiData | IcpGuiData) -> str:
     # --- Read ICP Description File (if applicable) --- Append to file_contents
     icp_description_content = ""
     if selected_program == Program.ICP:
-        icp_file_path = data.files.get("ICP Description")  # Safer get
+        icp_file_path = data.files.get(FileCategory.ICP)  # Safer get
         if icp_file_path and os.path.exists(icp_file_path):
             try:
                 icp_description_content = read_docx(icp_file_path)
                 # Add with a clear key to context
-                file_contents["ICP Traineeship Description.docx"] = (
-                    icp_description_content
-                )
+                file_contents["ICP Traineeship Description.docx"] = icp_description_content
             except Exception as e:
                 print(f"Error reading ICP description file {icp_file_path}: {e}")
                 file_contents["ICP Traineeship Description.docx"] = (
                     "[Error reading ICP description]"
                 )
         else:
-            print(
-                f"Warning: ICP Description file path not found or file missing: {icp_file_path}"
-            )
+            print(f"Warning: ICP Description file path not found or file missing: {icp_file_path}")
             # Don't add to file_contents if missing
 
     # --- Get ICP Specific Prompt Info --- (Store them for use in the loop)
@@ -205,10 +199,7 @@ def send_prompts(data: GuiData | IcpGuiData) -> str:
 
     # Build the general context string ONCE (includes ICP description if present)
     general_context = "\n\n---\n\n".join(
-        [
-            f"File: {file_name}\nContent:\n{content}"
-            for file_name, content in file_contents.items()
-        ]
+        [f"File: {file_name}\nContent:\n{content}" for file_name, content in file_contents.items()]
     )
 
     promno = -1
@@ -255,9 +246,7 @@ Specific Instructions:
                 print(f"Applied CRITICAL ICP info to prompt: {prompt_name}")
 
         # Prepare generation config with temperature
-        generation_config: genai_types.GenerateContentConfigOrDict = {
-            "temperature": temperature
-        }
+        generation_config: genai_types.GenerateContentConfigOrDict = {"temperature": temperature}
 
         # Add thinking configuration if enabled and this prompt should use thinking
         if enable_thinking and prompt_name in thinking_prompts:
@@ -322,9 +311,7 @@ Specific Instructions:
                     )
 
             except Exception as e:
-                print(
-                    f"Error processing prompt {prompt_name} (attempt {attempt + 1}): {e}"
-                )
+                print(f"Error processing prompt {prompt_name} (attempt {attempt + 1}): {e}")
                 if attempt == max_attempts - 1:  # Last attempt
                     results[prompt_name] = (
                         "[]" if prompt_name in list_output_prompts else ""
@@ -347,11 +334,7 @@ Specific Instructions:
 
     max_retries = 2
     for prompt_name in critical_prompts:
-        if (
-            prompt_name not in results
-            or results[prompt_name] == ""
-            or results[prompt_name] == "[]"
-        ):
+        if prompt_name not in results or results[prompt_name] == "" or results[prompt_name] == "[]":
             print(
                 f"Warning: Result for critical prompt '{prompt_name}' is still empty after initial attempts. Retrying..."
             )
@@ -368,9 +351,7 @@ Specific Instructions:
                 time.sleep(1)
 
                 # Reuse prompt details from initial run
-                prompt_data = next(
-                    filter(lambda p: p.name == prompt_name, prompts), None
-                )
+                prompt_data = next(filter(lambda p: p.name == prompt_name, prompts), None)
                 if prompt_data is None:
                     print(f"Error: Prompt data not found for {prompt_name}")
                     continue
@@ -382,22 +363,14 @@ Specific Instructions:
 
                 if selected_program == Program.ICP:
                     # Check which specific prompt it is and get the corresponding info
-                    if (
-                        prompt_name == PromptName.PERSONALITY and icp_info_p3
-                    ):  # Use stored info
+                    if prompt_name == PromptName.PERSONALITY and icp_info_p3:  # Use stored info
                         icp_instruction_retry = icp_info_p3
-                    elif (
-                        prompt_name == PromptName.CONQUAL and icp_info_p6a
-                    ):  # Use stored info
+                    elif prompt_name == PromptName.CONQUAL and icp_info_p6a:  # Use stored info
                         icp_instruction_retry = icp_info_p6a
-                    elif (
-                        prompt_name == PromptName.CONIMPROV and icp_info_p6b
-                    ):  # Use stored info
+                    elif prompt_name == PromptName.CONIMPROV and icp_info_p6b:  # Use stored info
                         icp_instruction_retry = icp_info_p6b
 
-                    if (
-                        icp_instruction_retry
-                    ):  # Only modify if specific info was provided
+                    if icp_instruction_retry:  # Only modify if specific info was provided
                         final_prompt_text_retry = f"""\
 ########################################################################
 # CRITICAL INSTRUCTION OVERRIDE FOR THIS TASK (RETRY ATTEMPT)          #
@@ -414,9 +387,7 @@ Specific Instructions:
 
 --- Original Prompt ---
 {prompt_text}"""
-                        print(
-                            f"Applied CRITICAL ICP info to RETRY prompt: {prompt_name}"
-                        )
+                        print(f"Applied CRITICAL ICP info to RETRY prompt: {prompt_name}")
 
                 # Prepare generation config with temperature
                 generation_config: genai_types.GenerateContentConfigOrDict = {
@@ -445,13 +416,8 @@ Specific Instructions:
                     )
                     output_text_retry = response.text
 
-                    if (
-                        prompt_name in list_output_prompts
-                        and output_text_retry is not None
-                    ):
-                        results[prompt_name] = _extract_list_from_string(
-                            output_text_retry
-                        )
+                    if prompt_name in list_output_prompts and output_text_retry is not None:
+                        results[prompt_name] = _extract_list_from_string(output_text_retry)
                     elif output_text_retry is not None:
                         results[prompt_name] = output_text_retry.strip()
                     else:
@@ -478,9 +444,7 @@ Specific Instructions:
             if prompt_name in results and (
                 results[prompt_name] == "" or results[prompt_name] == "[]"
             ):
-                print(
-                    f"Error: Critical prompt '{prompt_name}' still empty after all attempts."
-                )
+                print(f"Error: Critical prompt '{prompt_name}' still empty after all attempts.")
 
     # --- End Retry Logic ---
 
@@ -510,9 +474,7 @@ Specific Instructions:
 
             for i, line in enumerate(lines):
                 stripped_line = line.strip()
-                is_bullet = stripped_line.startswith("*") or stripped_line.startswith(
-                    "•"
-                )
+                is_bullet = stripped_line.startswith("*") or stripped_line.startswith("•")
 
                 # Improved summary detection - check for various indicators
                 is_summary = False
@@ -554,11 +516,7 @@ Specific Instructions:
                         formatted_parts.append(f"• {content}")
 
                 # Non-bullet text that looks like a summary
-                elif (
-                    stripped_line
-                    and not first_point
-                    and (is_summary or is_last_content)
-                ):
+                elif stripped_line and not first_point and (is_summary or is_last_content):
                     # Add extra breaks for non-bullet summary paragraph
                     if formatted_parts and not formatted_parts[-1] == "<<BREAK>>":
                         formatted_parts.append("<<BREAK>>")
@@ -597,18 +555,12 @@ Specific Instructions:
                     # Attempt to parse, but prioritize keeping original if error
                     try:
                         items = json.loads(original_data)
-                        results[prompt_key] = (
-                            items if isinstance(items, list) else original_data
-                        )
+                        results[prompt_key] = items if isinstance(items, list) else original_data
                     except (json.JSONDecodeError, TypeError):
-                        results[prompt_key] = (
-                            original_data  # Keep original string on error
-                        )
+                        results[prompt_key] = original_data  # Keep original string on error
                 elif isinstance(original_data, list):
                     results[prompt_key] = original_data  # Already a list
-                    results[prompt_key_original] = json.dumps(
-                        original_data
-                    )  # Store JSON version
+                    results[prompt_key_original] = json.dumps(original_data)  # Store JSON version
                 else:
                     # Not a list or JSON string, store original and keep as is
                     results[prompt_key_original] = str(original_data)

@@ -71,9 +71,7 @@ def update_document(
 ) -> str | None:
     """Updates the Word document."""
     try:
-        doc = docx.Document(
-            resource_path("resources/Assessment_report_Data_chiefs.docx")
-        )
+        doc = docx.Document(resource_path("resources/Assessment_report_Data_chiefs.docx"))
     except Exception as e:
         print(f"Error: Failed to open template: {e}")
         return None
@@ -135,13 +133,9 @@ def update_document(
                 # Replace Piet in each list item
                 list_items_pietless = replace_piet_in_list(list_items, name, gender)
                 # Store the processed list back into the _original key
-                output_dic[original_key] = (
-                    list_items_pietless  # Store the list directly
-                )
+                output_dic[original_key] = list_items_pietless  # Store the list directly
             else:
-                print(
-                    f"Warning: Could not process {original_key} as a list after eval."
-                )
+                print(f"Warning: Could not process {original_key} as a list after eval.")
                 output_dic[original_key] = []  # Ensure it's an empty list on failure
         else:
             # Ensure the key exists even if the prompt failed, to avoid errors later
@@ -228,10 +222,7 @@ def format_interests_output(interests_json_string: str) -> str:
         # Clean the string by removing backslashes
         interests_json_string = interests_json_string.replace("\\", "")
         # Replace 'N/A' with a placeholder if it's the only item
-        if (
-            interests_json_string.strip() == '"N/A"'
-            or interests_json_string.strip() == "'N/A'"
-        ):
+        if interests_json_string.strip() == '"N/A"' or interests_json_string.strip() == "'N/A'":
             return "No specific interests identified"
 
         interests_list = ast.literal_eval(interests_json_string)
@@ -362,9 +353,7 @@ def add_interests_table(doc: Document, interests_text: str) -> None:
 
                 # Filter out N/A values
                 interests_list = [
-                    s
-                    for s in interests_list
-                    if s != "N/A" and s != "N/A" and s is not None
+                    s for s in interests_list if s != "N/A" and s != "N/A" and s is not None
                 ]
 
                 if not interests_list:
@@ -375,9 +364,7 @@ def add_interests_table(doc: Document, interests_text: str) -> None:
                 print(f"Error processing interests: {e}")
                 # Fallback to simple string processing if literal_eval fails
                 interests_list = [
-                    s.strip()
-                    for s in interests_text.strip("[]").split(",")
-                    if s.strip()
+                    s.strip() for s in interests_text.strip("[]").split(",") if s.strip()
                 ]
                 interests_list = [
                     s.strip('"').strip("'")
@@ -471,9 +458,7 @@ def update_language_skills_table(doc: Document, language_levels: list[str]) -> N
         normalized_level = None
         if isinstance(raw_level, str):
             # Clean any remaining quotes or backslashes
-            raw_level = (
-                raw_level.replace('"', "").replace("'", "").replace("\\", "").strip()
-            )
+            raw_level = raw_level.replace('"', "").replace("'", "").replace("\\", "").strip()
 
             # Try to find a valid level pattern
             for valid_level in valid_levels:
@@ -490,18 +475,14 @@ def update_language_skills_table(doc: Document, language_levels: list[str]) -> N
                     normalized_level = f"{level_char}{level_num}"
 
                     # Verify it's a valid level
-                    if normalized_level not in [
-                        level.upper() for level in valid_levels
-                    ]:
+                    if normalized_level not in [level.upper() for level in valid_levels]:
                         print(
                             f"Warning: Extracted invalid level {normalized_level} from {raw_level}, using as is"
                         )
 
         # If we couldn't normalize, use the raw level
         if normalized_level is None:
-            print(
-                f"Warning: Unable to normalize language level '{raw_level}', using as is"
-            )
+            print(f"Warning: Unable to normalize language level '{raw_level}', using as is")
             normalized_level = str(raw_level).upper()
 
         # Replace the "A1/B1/B2.." placeholder in the first cell

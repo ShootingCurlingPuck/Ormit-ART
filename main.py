@@ -59,9 +59,7 @@ class ProcessingThread(QThread):
             # Check if all required files exist
             for _, file_path in self.GUI_data.files.items():
                 if not os.path.exists(file_path):
-                    global_signals.update_message.emit(
-                        f"Error: File not found: {file_path}"
-                    )
+                    global_signals.update_message.emit(f"Error: File not found: {file_path}")
                     return
 
             # Redact and store files
@@ -107,9 +105,7 @@ class ProcessingThread(QThread):
                 )
 
             if updated_doc:
-                global_signals.update_message.emit(
-                    f"Report generated successfully: {updated_doc}"
-                )
+                global_signals.update_message.emit(f"Report generated successfully: {updated_doc}")
                 # Emit the path of the generated document
                 self.processing_completed.emit(updated_doc)
             else:
@@ -171,9 +167,7 @@ class MainWindow(QWidget):
         self.key_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.key_label, 1, 0)
 
-        self.openai_key_input = QLineEdit(
-            placeholderText="Enter Gemini Key: ***************"
-        )
+        self.openai_key_input = QLineEdit(placeholderText="Enter Gemini Key: ***************")
         # Load saved key if available
         self._load_saved_key()
         layout.addWidget(self.openai_key_input, 1, 1, 1, 2)
@@ -196,9 +190,7 @@ class MainWindow(QWidget):
 
         # Select Gender
         self.gender_label = QLabel("Gender:")
-        self.gender_label.setAlignment(
-            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
-        )
+        self.gender_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         layout.addWidget(self.gender_label, 4, 0)
 
         self.gender_combo = QComboBox(self)
@@ -264,9 +256,7 @@ Cons: Slower response, higher cost.""")
 
         # Select Traineeship
         self.program_label = QLabel("Traineeship:")
-        self.program_label.setAlignment(
-            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
-        )
+        self.program_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         layout.addWidget(self.program_label, 6, 0)
 
         self.program_combo = QComboBox(self)
@@ -461,22 +451,15 @@ Cons: Slower response, higher cost.""")
             return
         # Save the key if changed
         current_key = self.openai_key_input.text().strip()
-        if (
-            not os.path.exists(self.KEY_FILE)
-            or open(self.KEY_FILE).read().strip() != current_key
-        ):
+        if not os.path.exists(self.KEY_FILE) or open(self.KEY_FILE).read().strip() != current_key:
             self._save_key(current_key)
 
         if not self.applicant_name_input.text().strip():
-            QMessageBox.warning(
-                self, "Missing Input", "Please enter the applicant's name."
-            )
+            QMessageBox.warning(self, "Missing Input", "Please enter the applicant's name.")
             return
 
         if not self.assessor_name_input.text().strip():
-            QMessageBox.warning(
-                self, "Missing Input", "Please enter the assessor's name."
-            )
+            QMessageBox.warning(self, "Missing Input", "Please enter the assessor's name.")
             return
 
         # Check if all required files are selected
@@ -535,9 +518,7 @@ Cons: Slower response, higher cost.""")
 
         # Start the processing thread
         self.processing_thread = ProcessingThread(GUI_data)
-        self.processing_thread.processing_completed.connect(
-            self.on_processing_completed
-        )
+        self.processing_thread.processing_completed.connect(self.on_processing_completed)
         self.processing_thread.start()
 
     def on_processing_completed(self, updated_doc: str) -> None:

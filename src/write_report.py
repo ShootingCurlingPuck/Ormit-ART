@@ -9,7 +9,14 @@ from docx.document import Document
 from docx.shared import Inches, Pt
 from docx.table import _Cell
 
-from src.constants import LANGUAGES, Font, FontSize, Gender, Program, PromptName
+from src.constants import (
+    Font,
+    FontSize,
+    Gender,
+    Language,
+    Program,
+    PromptName,
+)
 from src.report_utils import (
     replace_and_format_header_text,
     replace_piet_in_list,
@@ -145,9 +152,7 @@ class ReportWriter(ABC):
 
         return self.doc
 
-    def _add_icon_to_cell(
-        self, cell: _Cell, score: Literal[-1, 0, 1] | None
-    ) -> Document:
+    def _add_icon_to_cell(self, cell: _Cell, score: Literal[-1, 0, 1] | None) -> Document:
         """Adds an icon based on the score to a cell."""
 
         safe_set_text(cell, "")
@@ -189,9 +194,7 @@ class DataReportWriter(ReportWriter):
     ) -> str | None:
         """Updates the Word document."""
         try:
-            doc = docx.Document(
-                resource_path("resources/Assessment_report_Data_chiefs.docx")
-            )
+            doc = docx.Document(resource_path("resources/Assessment_report_Data_chiefs.docx"))
         except Exception as e:
             print(f"Error: Failed to open template: {e}")
             return None
@@ -224,7 +227,7 @@ class DataReportWriter(ReportWriter):
         language_replacements_str = output_dic.get(PromptName.LANGUAGE, "[]")
         language_levels = safe_literal_eval(language_replacements_str, [])
         if isinstance(language_levels, list):
-            for index, language in enumerate(LANGUAGES):
+            for index, language in enumerate(Language):
                 if index < len(language_levels):
                     proficiency_level = language_levels[index]
                     placeholder = f"{{prompt5_language_{language.value.lower()}}}"
@@ -252,16 +255,10 @@ class DataReportWriter(ReportWriter):
                     # Replace Piet in each list item
                     list_items_pietless = replace_piet_in_list(list_items, name, gender)
                     # Store the processed list back into the _original key
-                    output_dic[original_key] = (
-                        list_items_pietless  # Store the list directly
-                    )
+                    output_dic[original_key] = list_items_pietless  # Store the list directly
                 else:
-                    print(
-                        f"Warning: Could not process {original_key} as a list after eval."
-                    )
-                    output_dic[
-                        original_key
-                    ] = []  # Ensure it's an empty list on failure
+                    print(f"Warning: Could not process {original_key} as a list after eval.")
+                    output_dic[original_key] = []  # Ensure it's an empty list on failure
             else:
                 # Ensure the key exists even if the prompt failed, to avoid errors later
                 output_dic[original_key] = []

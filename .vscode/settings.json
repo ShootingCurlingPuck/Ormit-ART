@@ -29,12 +29,11 @@
     "editor.unicodeHighlight.invisibleCharacters": false,
     "autoDocstring.docstringFormat": "numpy",
     "json.maxItemsComputed": 10000,
-    "editor.codeActionsOnSave": {},
     "workbench.editor.empty.hint": "hidden",
-    "github.copilot.advanced": {},
     "python.analysis.aiCodeActions": {
         "implementAbstractClasses": true,
         "generateSymbol": true,
         "convertFormatString": true
     },
+    "ruff.lineLength": 100,
 }

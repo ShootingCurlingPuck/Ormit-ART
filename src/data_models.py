@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from src.constants import Gender, Program, PromptName, FileCategory
+from src.constants import FileCategory, Gender, Program, PromptName
 
 
 @dataclass

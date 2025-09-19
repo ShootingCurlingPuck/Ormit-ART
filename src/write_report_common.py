@@ -81,9 +81,7 @@ def add_content_detailstable(doc: Document, personal_details: list[str]) -> None
         print("Warning: personal_details is not a list.")
         return
 
-    if len(personal_details) == 1 and all(
-        isinstance(ele, str) for ele in personal_details
-    ):
+    if len(personal_details) == 1 and all(isinstance(ele, str) for ele in personal_details):
         personal_details = personal_details[0].split(",")
 
     for row_index, row in enumerate(table.rows):
@@ -93,39 +91,29 @@ def add_content_detailstable(doc: Document, personal_details: list[str]) -> None
 
             if first_cell_text == "Name candidate" and second_cell_text == ":":
                 cell = safe_get_cell(table, row_index, 2)
-                safe_set_text(
-                    cell, personal_details[0] if len(personal_details) > 0 else ""
-                )
+                safe_set_text(cell, personal_details[0] if len(personal_details) > 0 else "")
 
             if first_cell_text == "Date of birth" and second_cell_text == ":":
                 cell = safe_get_cell(table, row_index, 2)
                 safe_set_text(
                     cell,
-                    restructure_date(personal_details[1])
-                    if len(personal_details) > 1
-                    else "",
+                    restructure_date(personal_details[1]) if len(personal_details) > 1 else "",
                 )
 
             if first_cell_text == "Position" and second_cell_text == ":":
                 cell = safe_get_cell(table, row_index, 2)
-                safe_set_text(
-                    cell, personal_details[2] if len(personal_details) > 2 else ""
-                )
+                safe_set_text(cell, personal_details[2] if len(personal_details) > 2 else "")
 
             if first_cell_text == "Assessment date" and second_cell_text == ":":
                 cell = safe_get_cell(table, row_index, 2)
                 safe_set_text(
                     cell,
-                    restructure_date(personal_details[3])
-                    if len(personal_details) > 3
-                    else "",
+                    restructure_date(personal_details[3]) if len(personal_details) > 3 else "",
                 )
 
             if first_cell_text == "Pool" and second_cell_text == ":":
                 cell = safe_get_cell(table, row_index, 2)
-                safe_set_text(
-                    cell, personal_details[4] if len(personal_details) > 4 else ""
-                )
+                safe_set_text(cell, personal_details[4] if len(personal_details) > 4 else "")
 
 
 def add_icon_to_cell(cell: _Cell, score: int | None) -> None:
@@ -172,8 +160,7 @@ def format_datatools_output(datatools_json_string: str) -> str:
     """Formats data tools output (not used in MCP, kept for consistency)."""
     try:
         return "\n".join(
-            f"- {tool}: {level}"
-            for tool, level in ast.literal_eval(datatools_json_string).items()
+            f"- {tool}: {level}" for tool, level in ast.literal_eval(datatools_json_string).items()
         )
     except (ValueError, SyntaxError):
         return "Could not parse data tools information."

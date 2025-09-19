@@ -10,9 +10,7 @@ from src.data_models import GuiData, IcpGuiData
 
 class Redactor:
     @staticmethod
-    def get_sensitive_data(
-        lines: list[str], target_names: list[str]
-    ) -> Generator[str, None, None]:
+    def get_sensitive_data(lines: list[str], target_names: list[str]) -> Generator[str, None, None]:
         """Function to get sensitive data lines containing specified keywords and other sensitive information"""
         NAME_REG = r"\b(" + "|".join(re.escape(name) for name in target_names) + r")\b"
         EMAIL_REG = r"[\w\.-]+@[\w\.-]+"
@@ -124,9 +122,7 @@ def redact_folder(GUI_data: GuiData | IcpGuiData) -> None:
 
     # Instantiate Redactor ONCE with the names
     if not target_names_list:
-        print(
-            "Warning: No Applicant or Assessor names provided for redaction. Skipping redaction."
-        )
+        print("Warning: No Applicant or Assessor names provided for redaction. Skipping redaction.")
         return  # No names to redact
 
     try:
@@ -146,9 +142,7 @@ def redact_folder(GUI_data: GuiData | IcpGuiData) -> None:
     # --- First, copy all files to the temp directory ---
     for file_key, file_path in files_to_process.items():
         if not file_path or not os.path.isfile(file_path):
-            print(
-                f"Skipping copy for '{file_key}': File path missing or invalid ('{file_path}')"
-            )
+            print(f"Skipping copy for '{file_key}': File path missing or invalid ('{file_path}')")
             continue
 
         # Determine destination name in temp directory
