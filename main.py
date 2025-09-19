@@ -142,9 +142,9 @@ class MainWindow(QWidget):
             self.msg_box.windowFlags() | Qt.WindowType.WindowMinimizeButtonHint
         )
         self.msg_box.setStandardButtons(QMessageBox.StandardButton.Close)
-        self.msg_box.button(QMessageBox.StandardButton.Close).clicked.connect(
-            self.close_application
-        )
+        msg_box_close = self.msg_box.button(QMessageBox.StandardButton.Close)
+        if msg_box_close is not None:
+            msg_box_close.clicked.connect(self.close_application)
 
         global_signals.update_message.connect(self.refresh_message_box)
 
