@@ -1,7 +1,5 @@
 import os
-import re
 import shutil
-from typing import Generator
 
 import fitz
 
@@ -9,41 +7,6 @@ from src.data_models import GuiData, IcpGuiData
 
 
 class Redactor:
-    @staticmethod
-    def get_sensitive_data(lines: list[str], target_names: list[str]) -> Generator[str, None, None]:
-        """Function to get sensitive data lines containing specified keywords and other sensitive information"""
-        NAME_REG = r"\b(" + "|".join(re.escape(name) for name in target_names) + r")\b"
-        EMAIL_REG = r"[\w\.-]+@[\w\.-]+"
-        PHONE_REG = r"\+\d{1,3}\s*\d{1,3}(\s*\d{2,3}){2,4}"
-
-        keywords = [
-            "gender",
-            "address",
-            "phone",
-            "e-mail",
-            "date of birth",
-            "links",
-            "socials",
-        ]
-
-        previous_line = None
-
-        for line in lines:
-            for keyword in keywords:
-                if previous_line and previous_line.lower().startswith(keyword):
-                    yield line
-
-            previous_line = line
-
-            for match in re.finditer(NAME_REG, line, re.IGNORECASE):
-                yield match.group(0)
-
-            for match in re.finditer(EMAIL_REG, line):
-                yield match.group(0)
-
-            for match in re.finditer(PHONE_REG, line):
-                yield match.group(0)
-
     def __init__(self, target_names: list[str]) -> None:
         self.target_names = [
             name for name in target_names if name

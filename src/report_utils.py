@@ -154,46 +154,6 @@ def safe_literal_eval(s: str, default: Any | None = None) -> Any:
         return default
 
 
-def format_bullet_points(text: str) -> str:
-    """
-    Formats text with bullet points to ensure proper bullet characters (* -> •).
-    It retains single newlines for separation, which add_bulleted_content will handle.
-
-    Args:
-        text: Text containing bullet points (either with * or •)
-
-    Returns:
-        Formatted text with • bullet points and single newline separators.
-    """
-    if not isinstance(text, str):
-        return text
-
-    # Split the text into lines
-    lines = text.split("\n")
-    formatted_lines: list[str] = []
-
-    for line in lines:
-        line = line.strip()
-        if not line:
-            # Keep single empty lines if they exist between points, but don't add extra
-            if formatted_lines and formatted_lines[-1]:  # Check if the last added line wasn't empty
-                formatted_lines.append("")
-            continue
-
-        # Check if this is a bullet point (either * or •)
-        if line.startswith("*") or line.startswith("•"):
-            # Remove the bullet and any leading spaces
-            content = line[1:].strip()
-            # Add back the bullet with proper spacing
-            formatted_lines.append(f"• {content}")
-        else:
-            # Regular paragraph, keep as is
-            formatted_lines.append(line)
-
-    # Join lines with single newlines
-    return "\n".join(formatted_lines)
-
-
 def shuttle_text(shuttle: list[Run]) -> str:
     """Helper function to get combined text from a list of runs."""
     t = ""
@@ -322,83 +282,6 @@ def replace_text_preserving_format(doc: Document, data: dict[str, str]) -> None:
 # def add_bulleted_content(doc, content, target_paragraph=None): ...
 
 
-def split_paragraphs_and_apply_styles(doc: Document) -> None:
-    """
-    Iterates through the document, splits paragraphs containing '<<BREAK>>',
-    and applies 'List Bullet' style to lines starting with '•'.
-    Must be called *after* all placeholders have been replaced.
-    """
-    print("Applying final paragraph splitting and styling...")
-    # Need to iterate carefully as we modify the paragraph list
-    paragraphs = list(doc.paragraphs)  # Create a copy to iterate over
-    for para in paragraphs:
-        if "<<BREAK>>" in para.text:
-            parts = para.text.split("<<BREAK>>")
-            # Keep the first part in the current paragraph
-            para.text = parts[0].strip()
-            current_p_element = para._element  # Reference point for inserting
-
-            # Apply style to the first part if needed
-            if para.text.startswith("•"):
-                para.style = "List Bullet"
-                para.text = para.text[1:].strip()  # Remove bullet character
-            elif para.style.name.startswith(
-                "List Bullet"
-            ):  # Ensure non-bullets don't keep bullet style
-                para.style = "Normal"
-
-            # Insert new paragraphs for the remaining parts
-            for part in parts[1:]:
-                stripped_part = part.strip()
-                if not stripped_part:
-                    # Insert an empty paragraph for spacing
-                    new_para = doc.add_paragraph("")  # Add empty paragraph
-                else:
-                    # Insert paragraph with text
-                    new_para = doc.add_paragraph(stripped_part)
-
-                    # Apply bullet style if necessary
-                    if stripped_part.startswith("•"):
-                        new_para.text = stripped_part[1:].strip()  # Remove bullet char
-                        new_para.style = "List Bullet"
-                    else:
-                        new_para.style = "Normal"  # Default style
-
-                # Move the newly created paragraph right after the previous one
-                current_p_element.addnext(new_para._element)
-                current_p_element = new_para._element  # Update reference point
-
-            # Re-apply font to the original (now modified) paragraph and new ones
-            all_paras_to_style = [para] + list(para._element.xpath("following-sibling::w:p"))[
-                : len(parts) - 1
-            ]
-            for p_to_style in all_paras_to_style:
-                # Convert element back to Paragraph object if needed, or apply style via XML
-                # For simplicity, let's re-fetch the paragraph object if possible (might be slow)
-                # A better way involves direct XML font application or ensuring styles are correct.
-                try:
-                    # Find the paragraph object corresponding to the element (this is non-trivial)
-                    # Simplified: Apply font to runs assuming we have the Paragraph object
-                    actual_para_obj = None
-                    if p_to_style == para._element:
-                        actual_para_obj = para
-                    else:
-                        # Find the object (inefficient way shown)
-                        for p_search in doc.paragraphs:
-                            if p_search._element == p_to_style:
-                                actual_para_obj = p_search
-                                break
-
-                    if actual_para_obj:
-                        for run in actual_para_obj.runs:
-                            run.font.name = Font.MONTSERRAT_REGULAR.value
-                            run.font.size = Pt(FontSize.MEDIUM.value)
-                except Exception as e:
-                    print(f"Warning: Could not apply font to split paragraph: {e}")
-
-    print("Finished applying final styles.")
-
-
 # --- Text Processing Functions ---
 def clean(text: str) -> str:
     """
@@ -415,25 +298,6 @@ def clean(text: str) -> str:
         if isinstance(text, str)
         else text
     )
-
-
-def strip_extra_quotes(input_string: str) -> str:
-    """
-    Removes leading/trailing double quotes.
-
-    Args:
-        input_string: String to process
-
-    Returns:
-        String without leading/trailing quotes
-    """
-    if (
-        isinstance(input_string, str)
-        and input_string.startswith('"')
-        and input_string.endswith('"')
-    ):
-        return input_string[1:-1]
-    return input_string
 
 
 def replacePiet(text: str, name: str, gender: Gender) -> str:
@@ -589,22 +453,6 @@ def clean_up(loc_dic: str) -> dict[str, Any]:
     except (FileNotFoundError, json.JSONDecodeError) as e:
         print(f"Error: Error loading/cleaning JSON: {e}")
         return {}
-
-
-def open_file(file_path: str) -> None:
-    """
-    Opens file based on OS.
-
-    Args:
-        file_path: Path to file to open
-
-    Returns:
-        None
-    """
-    if os.name == "nt":  # Windows
-        os.startfile(file_path)
-    elif os.name == "posix":  # macOS, Linux
-        os.system(f'open "{file_path}"')
 
 
 def split_paragraphs_at_marker_and_style(doc: Document) -> None:
