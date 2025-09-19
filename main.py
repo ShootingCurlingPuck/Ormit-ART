@@ -22,7 +22,7 @@ from PyQt6.QtWidgets import (
 
 import src.write_report_data as data_write_report
 import src.write_report_mcp as mcp_write_report
-from src.constants import Gender, Program
+from src.constants import Gender, Program, FileTypeFilter, FileCategory
 from src.data_models import GuiData, IcpGuiData
 from src.global_signals import global_signals
 from src.prompting import send_prompts
@@ -270,26 +270,26 @@ Cons: Slower response, higher cost.""")
         layout.addWidget(self.program_combo, 6, 1)
 
         # Document labels
-        self.file_label1 = QLabel("No file selected", self)
-        self.file_label2 = QLabel("No file selected", self)
-        self.file_label3 = QLabel("No file selected", self)
+        self.file_label1 = QLabel(FileCategory.PAPI, self)
+        self.file_label2 = QLabel(FileCategory.COG, self)
+        self.file_label3 = QLabel(FileCategory.NOTES, self)
 
         # File selection buttons
-        self.selected_files: dict[str, str] = {}
-        self.file_browser_btn1 = QPushButton("PAPI Gebruikersrapport")
-        self.file_browser_btn1.clicked.connect(lambda: self.open_file_dialog(1))
-        layout.addWidget(self.file_browser_btn1, 7, 0)
-        layout.addWidget(self.file_label1, 7, 1, 1, 2)
+        self.selected_files: dict[FileCategory, str] = {}
+        self.file_browser_btn1 = QPushButton("No file selected")
+        self.file_browser_btn1.clicked.connect(lambda: self.open_file_dialog(self.file_browser_btn1, FileCategory.PAPI))
+        layout.addWidget(self.file_label1, 7, 0)
+        layout.addWidget(self.file_browser_btn1, 7, 1, 1, 2)
 
-        self.file_browser_btn2 = QPushButton("Cog. Test")
-        self.file_browser_btn2.clicked.connect(lambda: self.open_file_dialog(2))
-        layout.addWidget(self.file_browser_btn2, 8, 0)
-        layout.addWidget(self.file_label2, 8, 1, 1, 2)
+        self.file_browser_btn2 = QPushButton("No file selected")
+        self.file_browser_btn2.clicked.connect(lambda: self.open_file_dialog(self.file_browser_btn2, FileCategory.COG))
+        layout.addWidget(self.file_label2, 8, 0)
+        layout.addWidget(self.file_browser_btn2, 8, 1, 1, 2)
 
-        self.file_browser_btn3 = QPushButton("Assessment Notes")
-        self.file_browser_btn3.clicked.connect(lambda: self.open_file_dialog(3))
-        layout.addWidget(self.file_browser_btn3, 9, 0)
-        layout.addWidget(self.file_label3, 9, 1, 1, 2)
+        self.file_browser_btn3 = QPushButton("No file selected")
+        self.file_browser_btn3.clicked.connect(lambda: self.open_file_dialog(self.file_browser_btn3, FileCategory.NOTES))
+        layout.addWidget(self.file_label3, 9, 0)
+        layout.addWidget(self.file_browser_btn3, 9, 1, 1, 2)
 
         # ICP Info for Prompt 3 (Personality)
         self.icp_info_prompt3_label = QLabel("ICP Info (Personality):")
@@ -334,14 +334,14 @@ Cons: Slower response, higher cost.""")
         layout.addWidget(self.icp_info_prompt6b_input, 12, 1, 1, 2)
 
         # ICP Description File Button/Label
-        self.icp_desc_button = QPushButton("ICP Description File")
+        self.icp_desc_button = QPushButton("No file selected (Required for ICP)")
         self.icp_desc_button.setVisible(False)
-        self.icp_desc_button.clicked.connect(lambda: self.open_file_dialog(4))
-        layout.addWidget(self.icp_desc_button, 13, 0)
+        self.icp_desc_button.clicked.connect(lambda: self.open_file_dialog(self.icp_desc_button, FileCategory.ICP, FileTypeFilter.WORD))
 
-        self.icp_desc_label = QLabel("No file selected (Required for ICP)", self)
+        self.icp_desc_label = QLabel(FileCategory.ICP, self)
         self.icp_desc_label.setVisible(False)
-        layout.addWidget(self.icp_desc_label, 13, 1, 1, 2)
+        layout.addWidget(self.icp_desc_button, 13, 1, 1, 2)
+        layout.addWidget(self.icp_desc_label, 13, 0)
 
         # Connect program selection change signal AFTER ICP widgets are created
         self.program_combo.currentIndexChanged.connect(self.handle_program_change)
@@ -388,13 +388,10 @@ Cons: Slower response, higher cost.""")
         self.icp_desc_label.setVisible(is_icp)
         # print("ICP Widget visibility set.") # Keep DEBUG if needed
 
-    def open_file_dialog(self, file_index: int) -> None:
+    def open_file_dialog(self, file_selector_button: QPushButton, file_cat: FileCategory, file_type_filter = FileTypeFilter.PDF) -> None:
         dialog = QFileDialog(self)
         dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
-        if file_index == 4:
-            dialog.setNameFilter("Word Files (*.docx);;All Files (*)")
-        else:
-            dialog.setNameFilter("PDF Files (*.pdf);;All Files (*)")
+        dialog.setNameFilter(file_type_filter)
         dialog.setViewMode(QFileDialog.ViewMode.List)
 
         if dialog.exec():
@@ -403,36 +400,19 @@ Cons: Slower response, higher cost.""")
                 selected_file = str(filenames[0])
                 file_basename = os.path.basename(selected_file)
 
-                if file_index == 1:
-                    self.file_label1.setText(file_basename)
-                    self.selected_files["PAPI Gebruikersrapport"] = selected_file
-                elif file_index == 2:
-                    self.file_label2.setText(file_basename)
-                    self.selected_files["Cog. Test"] = selected_file
-                elif file_index == 3:
-                    self.file_label3.setText(file_basename)
-                    self.selected_files["Assessment Notes"] = selected_file
-                elif file_index == 4:
-                    self.icp_desc_label.setText(file_basename)
-                    self.selected_files["ICP Description"] = selected_file
+                file_selector_button.setText(file_basename)
+                self.selected_files[file_cat] = selected_file
 
                 # Check if standard files are selected to show submit button
-                standard_files_selected = all(
-                    key in self.selected_files
-                    for key in [
-                        "PAPI Gebruikersrapport",
-                        "Cog. Test",
-                        "Assessment Notes",
-                    ]
-                )
+                standard_files_selected = all(key in self.selected_files for key in FileCategory if key != FileCategory.ICP)
                 if standard_files_selected:
                     self.submitbtn.show()
                 # Submit button remains hidden otherwise
 
     def _load_saved_key(self) -> None:
         try:
-            if os.path.exists(self.KEY_FILE):
-                with open(self.KEY_FILE, "r") as f:
+            if os.path.exists(MainWindow.KEY_FILE):
+                with open(MainWindow.KEY_FILE, "r") as f:
                     key = f.read().strip()
                     if key:
                         self.openai_key_input.setText(key)
@@ -477,7 +457,7 @@ Cons: Slower response, higher cost.""")
             return
 
         # Check if all required files are selected
-        required_files = ["PAPI Gebruikersrapport", "Cog. Test", "Assessment Notes"]
+        required_files = [FileCategory.PAPI, FileCategory.COG, FileCategory.NOTES]
         missing_files = [
             f
             for f in required_files
@@ -510,8 +490,8 @@ Cons: Slower response, higher cost.""")
         if selected_program == Program.ICP:
             # Check required ICP description file
             if (
-                "ICP Description" not in self.selected_files
-                or not self.selected_files["ICP Description"]
+                FileCategory.ICP not in self.selected_files
+                or self.selected_files[FileCategory.ICP] == ""
             ):
                 QMessageBox.warning(
                     self,

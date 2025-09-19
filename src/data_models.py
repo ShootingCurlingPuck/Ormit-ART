@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from src.constants import Gender, Program, PromptName
+from src.constants import Gender, Program, PromptName, FileCategory
 
 
 @dataclass
@@ -10,7 +10,7 @@ class GuiData:
     assessor_name: str
     gender: Gender
     traineeship: Program
-    files: dict[str, str]
+    files: dict[FileCategory, str]
     enable_thinking: bool
 
 

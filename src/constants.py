@@ -10,6 +10,17 @@ class Program(StrEnum):
 class Gender(StrEnum):
     M = "M"
     F = "F"
+    X = "X"
+
+class FileTypeFilter(StrEnum):
+    WORD = "Word Files (*.docx);;All Files (*)"
+    PDF = "PDF Files (*.pdf);;All Files (*)"
+
+class FileCategory(StrEnum):
+    PAPI = "PAPI Gebruikersrapport"
+    COG = "Cog. Test"
+    NOTES = "Assessment Notes"
+    ICP = "ICP Description File"
 
 
 class Language(StrEnum):
