@@ -67,7 +67,6 @@ class PromptName(StrEnum):
     INTERESTS_ORIGINAL = "prompt9_interests_original"
 
 
-LANGUAGES = [language for language in Language]
 REQUIRED_FILE_CATEGORIES = [
     file_category for file_category in FileCategory if file_category != FileCategory.ICP
 ]
