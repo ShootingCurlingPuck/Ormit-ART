@@ -167,7 +167,8 @@ class MainWindow(QWidget):
         self.key_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.key_label, 1, 0)
 
-        self.openai_key_input = QLineEdit(placeholderText="Enter Gemini Key: ***************")
+        self.openai_key_input = QLineEdit()
+        self.openai_key_input.setPlaceholderText("Enter Gemini Key: ***************")
         # Load saved key if available
         self._load_saved_key()
         layout.addWidget(self.openai_key_input, 1, 1, 1, 2)
@@ -177,7 +178,8 @@ class MainWindow(QWidget):
         self.applicant_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.applicant_label, 2, 0)
 
-        self.applicant_name_input = QLineEdit(placeholderText="Applicant Full Name")
+        self.applicant_name_input = QLineEdit()
+        self.applicant_name_input.setPlaceholderText("Applicant Full Name")
         layout.addWidget(self.applicant_name_input, 2, 1, 1, 2)
 
         # Assessor information
@@ -185,7 +187,8 @@ class MainWindow(QWidget):
         self.assessor_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.assessor_label, 3, 0)
 
-        self.assessor_name_input = QLineEdit(placeholderText="Assessor Full Name")
+        self.assessor_name_input = QLineEdit()
+        self.assessor_name_input.setPlaceholderText("Assessor Full Name")
         layout.addWidget(self.assessor_name_input, 3, 1, 1, 2)
 
         # Select Gender
@@ -301,8 +304,9 @@ Cons: Slower response, higher cost.""")
         self.icp_info_prompt3_label.setVisible(False)
         layout.addWidget(self.icp_info_prompt3_label, 10, 0)
 
-        self.icp_info_prompt3_input = QLineEdit(
-            placeholderText="Optional: Specific instructions/context for Prompt 3"
+        self.icp_info_prompt3_input = QLineEdit()
+        self.icp_info_prompt3_input.setPlaceholderText(
+            "Optional: Specific instructions/context for Prompt 3"
         )
         self.icp_info_prompt3_input.setVisible(False)
         layout.addWidget(self.icp_info_prompt3_input, 10, 1, 1, 2)
@@ -315,8 +319,9 @@ Cons: Slower response, higher cost.""")
         self.icp_info_prompt6a_label.setVisible(False)
         layout.addWidget(self.icp_info_prompt6a_label, 11, 0)
 
-        self.icp_info_prompt6a_input = QLineEdit(
-            placeholderText="Optional: Specific instructions/context for Prompt 6a"
+        self.icp_info_prompt6a_input = QLineEdit()
+        self.icp_info_prompt6a_input.setPlaceholderText(
+            "Optional: Specific instructions/context for Prompt 6a"
         )
         self.icp_info_prompt6a_input.setVisible(False)
         layout.addWidget(self.icp_info_prompt6a_input, 11, 1, 1, 2)
@@ -329,8 +334,9 @@ Cons: Slower response, higher cost.""")
         self.icp_info_prompt6b_label.setVisible(False)
         layout.addWidget(self.icp_info_prompt6b_label, 12, 0)
 
-        self.icp_info_prompt6b_input = QLineEdit(
-            placeholderText="Optional: Specific instructions/context for Prompt 6b"
+        self.icp_info_prompt6b_input = QLineEdit()
+        self.icp_info_prompt6b_input.setPlaceholderText(
+            "Optional: Specific instructions/context for Prompt 6b"
         )
         self.icp_info_prompt6b_input.setVisible(False)
         layout.addWidget(self.icp_info_prompt6b_input, 12, 1, 1, 2)
