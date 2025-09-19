@@ -164,18 +164,3 @@ def format_datatools_output(datatools_json_string: str) -> str:
         )
     except (ValueError, SyntaxError):
         return "Could not parse data tools information."
-
-
-class ReportWriter:
-    def __init__(self) -> None:
-        pass
-
-
-class MgtReportWriter(ReportWriter):
-    def __init__(self) -> None:
-        super().__init__()
-
-
-class DataReportWriter(ReportWriter):
-    def __init__(self) -> None:
-        super().__init__()
