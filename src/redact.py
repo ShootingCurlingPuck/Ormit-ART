@@ -3,6 +3,7 @@ import shutil
 
 import fitz
 
+from src.constants import FileCategory
 from src.data_models import GuiData, IcpGuiData
 
 
@@ -109,17 +110,16 @@ def redact_folder(GUI_data: GuiData | IcpGuiData) -> None:
             continue
 
         # Determine destination name in temp directory
+        extension = os.path.splitext(file_path)[1][1:].lower()
         # Use standard names expected by send_prompts
-        if file_key == "PAPI Gebruikersrapport":
-            dest_path = "temp/PAPI Gebruikersrapport.pdf"
-        elif file_key == "Cog. Test":
-            dest_path = "temp/Cog. Test.pdf"
-        elif file_key == "Assessment Notes":
-            dest_path = "temp/Assessment Notes.pdf"
-        elif file_key == "ICP Description":
-            # For ICP Description, keep the original extension
-            extension = os.path.splitext(file_path)[1]
-            dest_path = f"temp/ICP Description{extension}"
+        if file_key == FileCategory.PAPI:
+            dest_path = f"temp/PAPI Gebruikersrapport.{extension}"
+        elif file_key == FileCategory.COG:
+            dest_path = f"temp/Cog. Test.{extension}"
+        elif file_key == FileCategory.NOTES:
+            dest_path = f"temp/Assessment Notes.{extension}"
+        elif file_key == FileCategory.ICP:
+            dest_path = f"temp/ICP Description.{extension}"
         else:
             # For any other files, keep original name
             dest_path = f"temp/{os.path.basename(file_path)}"
