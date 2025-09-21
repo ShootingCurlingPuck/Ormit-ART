@@ -3,7 +3,8 @@
         "editor.defaultFormatter": "charliermarsh.ruff",
         "editor.formatOnSave": true,
         "editor.codeActionsOnSave": {
-            "source.organizeImports": "always"
+            "source.organizeImports": "always",
+            "source.fixAll": "always"
         },
     },
     "github.copilot.enable": {
@@ -35,5 +36,4 @@
         "generateSymbol": true,
         "convertFormatString": true
     },
-    "ruff.lineLength": 100,
 }
