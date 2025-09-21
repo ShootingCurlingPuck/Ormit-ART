@@ -1,3 +1,4 @@
+import contextlib
 import os
 import shutil
 
@@ -59,10 +60,8 @@ class Redactor:
             print(f"ERROR during redaction of {filename}: {e}")
             # Ensure the document is closed even if an error occurs during processing
             if "doc" in locals() and doc:
-                try:
+                with contextlib.suppress(Exception):
                     doc.close()
-                except:  # Handle cases where doc might be invalid
-                    pass
 
 
 def create_temp_folder() -> None:
@@ -71,15 +70,14 @@ def create_temp_folder() -> None:
         os.makedirs(temp_folder)
 
 
-def redact_folder(GUI_data: GuiData | IcpGuiData) -> None:
+def redact_folder(gui_data: GuiData | IcpGuiData) -> None:
     """Redacts specified names in the specific PDF files provided via GUI_data."""
-
     # Make sure temp folder exists
     create_temp_folder()
 
     # Extract names needed for redaction from GUI_data
-    applicant_name = GUI_data.applicant_name.strip()
-    assessor_name = GUI_data.assessor_name.strip()
+    applicant_name = gui_data.applicant_name.strip()
+    assessor_name = gui_data.assessor_name.strip()
     target_names_list = [
         name for name in [applicant_name, assessor_name] if name
     ]  # Filter out empty strings
@@ -98,7 +96,7 @@ def redact_folder(GUI_data: GuiData | IcpGuiData) -> None:
     print("Starting redaction process on provided files...")
 
     # --- Iterate through the files provided by the user ---
-    files_to_process = GUI_data.files
+    files_to_process = gui_data.files
     if not files_to_process:
         print("Warning: No files found in GUI_data['Files'] to process.")
         return
@@ -130,13 +128,13 @@ def redact_folder(GUI_data: GuiData | IcpGuiData) -> None:
             shutil.copy2(file_path, dest_path)
 
             # Update the file path in GUI_data to point to the new location
-            GUI_data.files[file_key] = dest_path
+            gui_data.files[file_key] = dest_path
         except Exception as e:
             print(f"Error copying file {file_path} to temp directory: {e}")
             continue
 
     # --- Now redact the files in the temp directory ---
-    for file_key, file_path in GUI_data.files.items():
+    for file_key, file_path in gui_data.files.items():
         # Skip if file path is invalid after copying
         if not file_path or not os.path.isfile(file_path):
             print(

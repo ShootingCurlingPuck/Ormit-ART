@@ -47,14 +47,14 @@ def set_font_properties(cell: _Cell) -> None:
             run.font.name = "Montserrat Light"
             run.font.size = Pt(11)
             r = run._element
-            rPr = r.rPr
-            if rPr is None:
-                rPr = OxmlElement("w:rPr")
-                r.append(rPr)
-            rFonts = OxmlElement("w:rFonts")
-            rFonts.set(qn("w:ascii"), "Montserrat Light")
-            rFonts.set(qn("w:hAnsi"), "Montserrat Light")
-            rPr.append(rFonts)
+            run_pr = r.rPr
+            if run_pr is None:
+                run_pr = OxmlElement("w:rPr")
+                r.append(run_pr)
+            run_fonts = OxmlElement("w:rFonts")
+            run_fonts.set(qn("w:ascii"), "Montserrat Light")
+            run_fonts.set(qn("w:hAnsi"), "Montserrat Light")
+            run_pr.append(run_fonts)
 
 
 def set_font_properties2(para) -> None:
@@ -72,12 +72,12 @@ def set_font_properties2(para) -> None:
                 run.font.size = Pt(10)
                 run.bold = False
                 r = run._element
-                rPr = r.rPr or OxmlElement("w:rPr")
-                r.append(rPr)
-                rFonts = OxmlElement("w:rFonts")
-                rFonts.set(qn("w:ascii"), "Montserrat Light")
-                rFonts.set(qn("w:hAnsi"), "Montserrat Light")
-                rPr.append(rFonts)
+                run_pr = r.rPr or OxmlElement("w:rPr")
+                r.append(run_pr)
+                run_fonts = OxmlElement("w:rFonts")
+                run_fonts.set(qn("w:ascii"), "Montserrat Light")
+                run_fonts.set(qn("w:hAnsi"), "Montserrat Light")
+                run_pr.append(run_fonts)
 
             if words[0] == "Dutch":
                 para.add_run("\t\t")
@@ -90,20 +90,16 @@ def set_font_properties2(para) -> None:
             last_run.font.size = Pt(10)
             last_run.bold = True
             r = last_run._element
-            rPr = last_run._element.rPr or OxmlElement("w:rPr")
-            r.append(rPr)
-            rFonts = OxmlElement("w:rFonts")
-            rFonts.set(qn("w:ascii"), "Montserrat Light")
-            rFonts.set(qn("w:hAnsi"), "Montserrat Light")
-            rPr.append(rFonts)
+            run_pr = last_run._element.rPr or OxmlElement("w:rPr")
+            r.append(run_pr)
+            run_fonts = OxmlElement("w:rFonts")
+            run_fonts.set(qn("w:ascii"), "Montserrat Light")
+            run_fonts.set(qn("w:hAnsi"), "Montserrat Light")
+            run_pr.append(run_fonts)
 
 
 def update_document(
-    output_dic: dict[str, Any],
-    name: str,
-    assessor: str,
-    gender: Gender,
-    program: Program,
+    output_dic: dict[str, Any], name: str, assessor: str, gender: Gender, program: Program
 ) -> str | None:
     """Updates the Word document (MCP version)."""
     try:
@@ -128,11 +124,7 @@ def update_document(
     ]
     for prompt_key in dynamic_prompts:
         replacement_text = output_dic.get(prompt_key, "")
-        if prompt_key in [
-            "prompt2_firstimpr",
-            "prompt3_personality",
-            "prompt4_cogcap_remarks",
-        ]:
+        if prompt_key in ["prompt2_firstimpr", "prompt3_personality", "prompt4_cogcap_remarks"]:
             replacement_text = replacePiet(replacement_text, name, gender)  # Apply replacePiet
         # Add to dictionary using the placeholder format {key}
         replacements[f"{{{prompt_key}}}"] = replacement_text
@@ -161,10 +153,7 @@ def update_document(
 
     # --- Handle list prompts that may contain "Piet" ---
     # (This section remains the same, operating on _original keys)
-    list_prompt_keys_original = [
-        "prompt6a_conqual_original",
-        "prompt6b_conimprov_original",
-    ]
+    list_prompt_keys_original = ["prompt6a_conqual_original", "prompt6b_conimprov_original"]
     for original_key in list_prompt_keys_original:
         if original_key in output_dic:
             list_str = output_dic.get(original_key, "[]")
@@ -219,10 +208,11 @@ def update_document(
         split_paragraphs_at_marker_and_style(doc)
         doc.save(updated_doc_path)
         print(f"Document saved: {updated_doc_path}")  # Added print statement
-        return updated_doc_path
     except Exception as e:
         print(f"Error: Failed to save document: {e}")  # Example of console error
         return None
+    else:
+        return updated_doc_path
 
 
 def format_datatools_output(datatools_json_string: str) -> str:
@@ -329,11 +319,11 @@ def conclusion(doc: Document, column: int, list_items: list[str]) -> None:
 
                 # Add proper XML formatting for consistent font appearance
                 r = run._element
-                rPr = r.get_or_add_rPr()
-                rFonts = OxmlElement("w:rFonts")
-                rFonts.set(qn("w:ascii"), "Montserrat")
-                rFonts.set(qn("w:hAnsi"), "Montserrat")
-                rPr.append(rFonts)
+                run_pr = r.get_or_add_rPr()
+                run_fonts = OxmlElement("w:rFonts")
+                run_fonts.set(qn("w:ascii"), "Montserrat")
+                run_fonts.set(qn("w:hAnsi"), "Montserrat")
+                run_pr.append(run_fonts)
 
     except IndexError:
         print(f"Warning: Could not access cell (1, {column}) in conclusion table")

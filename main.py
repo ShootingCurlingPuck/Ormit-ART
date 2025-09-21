@@ -1,3 +1,4 @@
+import contextlib
 import os
 import stat
 import sys
@@ -22,13 +23,7 @@ from PyQt6.QtWidgets import (
 
 import src.write_report_data as data_write_report
 import src.write_report_mcp as mcp_write_report
-from src.constants import (
-    REQUIRED_FILE_CATEGORIES,
-    FileCategory,
-    FileTypeFilter,
-    Gender,
-    Program,
-)
+from src.constants import REQUIRED_FILE_CATEGORIES, FileCategory, FileTypeFilter, Gender, Program
 from src.data_models import GuiData, IcpGuiData
 from src.global_signals import global_signals
 from src.prompting import send_prompts
@@ -46,9 +41,9 @@ icon_path = resource_path(icon_path_abs)
 class ProcessingThread(QThread):
     processing_completed = pyqtSignal(str)
 
-    def __init__(self, GUI_data: GuiData | IcpGuiData):
+    def __init__(self, gui_data: GuiData | IcpGuiData):
         super().__init__()
-        self.GUI_data = GUI_data
+        self.gui_data = gui_data
 
     def run(self) -> None:
         try:
@@ -57,39 +52,39 @@ class ProcessingThread(QThread):
                 os.makedirs("temp")
 
             # Check if all required files exist
-            for _, file_path in self.GUI_data.files.items():
+            for file_path in self.gui_data.files.values():
                 if not os.path.exists(file_path):
                     global_signals.update_message.emit(f"Error: File not found: {file_path}")
                     return
 
             # Redact and store files
             global_signals.update_message.emit("Redacting sensitive information...")
-            redact_folder(self.GUI_data)
+            redact_folder(self.gui_data)
 
             # Send prompts to Gemini
             global_signals.update_message.emit("Sending prompts to Gemini...")
-            output_path = send_prompts(self.GUI_data)
+            output_path = send_prompts(self.gui_data)
 
             # Convert JSON to report
             global_signals.update_message.emit("Generating report...")
             clean_data = clean_up(output_path)
-            selected_program = self.GUI_data.traineeship
+            selected_program = self.gui_data.traineeship
 
-            if selected_program == Program.MNGT or selected_program == Program.ICP:
+            if selected_program in (Program.MNGT, Program.ICP):
                 updated_doc = mcp_write_report.update_document(
                     clean_data,
-                    self.GUI_data.applicant_name,
-                    self.GUI_data.assessor_name,
-                    self.GUI_data.gender,
-                    self.GUI_data.traineeship,
+                    self.gui_data.applicant_name,
+                    self.gui_data.assessor_name,
+                    self.gui_data.gender,
+                    self.gui_data.traineeship,
                 )
             elif selected_program == Program.DATA:
                 updated_doc = data_write_report.update_document(
                     clean_data,
-                    self.GUI_data.applicant_name,
-                    self.GUI_data.assessor_name,
-                    self.GUI_data.gender,
-                    self.GUI_data.traineeship,
+                    self.gui_data.applicant_name,
+                    self.gui_data.assessor_name,
+                    self.gui_data.gender,
+                    self.gui_data.traineeship,
                 )
             else:
                 # Default fallback (can remain MCP or be made more specific if needed)
@@ -98,10 +93,10 @@ class ProcessingThread(QThread):
                 )
                 updated_doc = mcp_write_report.update_document(
                     clean_data,
-                    self.GUI_data.applicant_name,
-                    self.GUI_data.assessor_name,
-                    self.GUI_data.gender,
-                    self.GUI_data.traineeship,
+                    self.gui_data.applicant_name,
+                    self.gui_data.assessor_name,
+                    self.gui_data.gender,
+                    self.gui_data.traineeship,
                 )
 
             if updated_doc:
@@ -115,7 +110,7 @@ class ProcessingThread(QThread):
             # Print full traceback for better debugging
             traceback_str = traceback.format_exc()
             print(f"Error in processing thread: {e}\n{traceback_str}")
-            global_signals.update_message.emit(f"Error: {str(e)}")
+            global_signals.update_message.emit(f"Error: {e!s}")
 
 
 class MainWindow(QWidget):
@@ -383,9 +378,7 @@ Cons: Slower response, higher cost.""")
     def handle_program_change(self) -> None:
         """Shows or hides ICP-specific widgets based on program selection."""
         selected_program = self.program_combo.currentText()
-        # print(f"handle_program_change called. Selected program: {selected_program}") # Keep DEBUG if needed
         is_icp = selected_program == Program.ICP
-        # print(f"Is ICP selected? {is_icp}") # Keep DEBUG if needed
 
         # Show/Hide the 3 labels and 3 inputs for specific prompts
         self.icp_info_prompt3_label.setVisible(is_icp)
@@ -398,7 +391,6 @@ Cons: Slower response, higher cost.""")
         # Show/Hide the ICP Description file widgets
         self.icp_desc_button.setVisible(is_icp)
         self.icp_desc_label.setVisible(is_icp)
-        # print("ICP Widget visibility set.") # Keep DEBUG if needed
 
     def open_file_dialog(
         self,
@@ -431,7 +423,7 @@ Cons: Slower response, higher cost.""")
     def _load_saved_key(self) -> None:
         try:
             if os.path.exists(MainWindow.KEY_FILE):
-                with open(MainWindow.KEY_FILE, "r") as f:
+                with open(MainWindow.KEY_FILE) as f:
                     key = f.read().strip()
                     if key:
                         self.openai_key_input.setText(key)
@@ -443,10 +435,8 @@ Cons: Slower response, higher cost.""")
             with open(self.KEY_FILE, "w") as f:
                 f.write(key.strip())
             # Set file permissions to user read/write only (if possible)
-            try:
+            with contextlib.suppress(Exception):
                 os.chmod(self.KEY_FILE, stat.S_IRUSR | stat.S_IWUSR)
-            except Exception:
-                pass
         except Exception as e:
             print(f"Warning: Could not save Gemini key: {e}")
 
@@ -487,7 +477,7 @@ Cons: Slower response, higher cost.""")
         selected_gender = Gender(self.gender_combo.currentText())
 
         # Gather all the data into a dictionary
-        GUI_data = GuiData(
+        gui_data = GuiData(
             gemini_key=self.openai_key_input.text(),
             applicant_name=self.applicant_name_input.text(),
             assessor_name=self.assessor_name_input.text(),
@@ -505,14 +495,12 @@ Cons: Slower response, higher cost.""")
                 or self.selected_files[FileCategory.ICP] == ""
             ):
                 QMessageBox.warning(
-                    self,
-                    "Missing ICP File",
-                    "Please select the ICP Description Word file.",
+                    self, "Missing ICP File", "Please select the ICP Description Word file."
                 )
                 return
             # Gather text from the THREE specific input fields
-            GUI_data = IcpGuiData(
-                **GUI_data.__dict__,
+            gui_data = IcpGuiData(
+                **gui_data.__dict__,
                 icp_info_prompt3=self.icp_info_prompt3_input.text().strip(),
                 icp_info_prompt6a=self.icp_info_prompt6a_input.text().strip(),
                 icp_info_prompt6b=self.icp_info_prompt6b_input.text().strip(),
@@ -523,7 +511,7 @@ Cons: Slower response, higher cost.""")
         self.msg_box.show()
 
         # Start the processing thread
-        self.processing_thread = ProcessingThread(GUI_data)
+        self.processing_thread = ProcessingThread(gui_data)
         self.processing_thread.processing_completed.connect(self.on_processing_completed)
         self.processing_thread.start()
 

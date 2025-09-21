@@ -4,17 +4,19 @@ import os
 import re
 import time
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import pypdf as PyPDF2
+import pypdf
 from docx import Document
 from google import genai
-from google.genai import types as genai_types
 
 from src.constants import FileCategory, Program, PromptName
 from src.data_models import GuiData, IcpGuiData
 from src.global_signals import global_signals
 from src.prompts import prompts
+
+if TYPE_CHECKING:
+    from google.genai import types as genai_types
 
 # Set the default Gemini model for all prompts
 default_model = "gemini-2.5-flash-preview-04-17"
@@ -25,7 +27,7 @@ def read_pdf(file_path: str) -> str:
     text = ""
     try:
         with open(file_path, "rb") as file:
-            reader = PyPDF2.PdfReader(file)
+            reader = pypdf.PdfReader(file)
             for page in reader.pages:
                 text += page.extract_text() + "\n"
     except Exception as e:
@@ -46,8 +48,7 @@ def read_docx(file_path: str) -> str:
 
 
 def _extract_list_from_string(text: str) -> str:
-    """
-    Safely extracts a Python list from a string and returns it as a *string*
+    """Safely extracts a Python list from a string and returns it as a *string*
     representation suitable for JSON, handling various Gemini output quirks.
     """
     match = re.search(r"\[[^\]]*\]", text)
@@ -168,11 +169,8 @@ def send_prompts(data: GuiData | IcpGuiData) -> str:
         PromptName.CONIMPROV,
         PromptName.INTERESTS,
     ]
-    lst_prompts_mcp = common_prompts + [PromptName.QUALSCORE]
-    lst_prompts_data = common_prompts + [
-        PromptName.QUALSCORE_DATA,
-        PromptName.DATATOOLS,
-    ]
+    lst_prompts_mcp = [*common_prompts, PromptName.QUALSCORE]
+    lst_prompts_data = [*common_prompts, PromptName.QUALSCORE_DATA, PromptName.DATATOOLS]
 
     # Define which prompts are expected to return lists (for parsing/evaluation)
     list_output_prompts = [
@@ -188,10 +186,7 @@ def send_prompts(data: GuiData | IcpGuiData) -> str:
 
     # --- Select appropriate list of prompts ---
     # Use MCP prompts for both MCP and NEW programs
-    if selected_program == Program.DATA:
-        lst_prompts = lst_prompts_data
-    else:  # Handles MCP, NEW, and any potential unknown as MCP
-        lst_prompts = lst_prompts_mcp
+    lst_prompts = lst_prompts_data if selected_program == Program.DATA else lst_prompts_mcp
 
     # --- Run Prompts ---
     results: dict[PromptName, str] = {}
@@ -291,14 +286,13 @@ Specific Instructions:
                         print(
                             f"Warning: Empty list result for prompt '{prompt_name}' on attempt {attempt + 1}."
                         )
+                elif output_text is not None and output_text.strip():
+                    results[prompt_name] = output_text.strip()
+                    success = True
                 else:
-                    if output_text is not None and output_text.strip():
-                        results[prompt_name] = output_text.strip()
-                        success = True
-                    else:
-                        print(
-                            f"Warning: Empty text result for prompt '{prompt_name}' on attempt {attempt + 1}."
-                        )
+                    print(
+                        f"Warning: Empty text result for prompt '{prompt_name}' on attempt {attempt + 1}."
+                    )
 
                 # If this is the last attempt and we haven't succeeded, use whatever we got
                 if not success and attempt == max_attempts - 1:
@@ -410,9 +404,7 @@ Specific Instructions:
 
                 try:
                     response = client.models.generate_content(
-                        model=default_model,
-                        contents=full_prompt_retry,
-                        config=generation_config,
+                        model=default_model, contents=full_prompt_retry, config=generation_config
                     )
                     output_text_retry = response.text
 
@@ -429,10 +421,9 @@ Specific Instructions:
                             f"Success: Extra retry for '{prompt_name}' successful on attempt {attempt + 1}."
                         )
                         break  # Exit retry loop
-                    else:
-                        print(
-                            f"Warning: Extra retry attempt {attempt + 1} for '{prompt_name}' still resulted in empty response."
-                        )
+                    print(
+                        f"Warning: Extra retry attempt {attempt + 1} for '{prompt_name}' still resulted in empty response."
+                    )
 
                 except Exception as e:
                     print(
@@ -450,7 +441,6 @@ Specific Instructions:
 
     def process_prompt_results(results: dict[PromptName, str]) -> dict[Any, str]:
         """Process the results from the prompts to ensure proper formatting."""
-
         # Format personality section (prompt3_personality) for template insertion
         if PromptName.PERSONALITY in results:
             text = results[PromptName.PERSONALITY]
@@ -474,7 +464,7 @@ Specific Instructions:
 
             for i, line in enumerate(lines):
                 stripped_line = line.strip()
-                is_bullet = stripped_line.startswith("*") or stripped_line.startswith("•")
+                is_bullet = stripped_line.startswith(("*", "•"))
 
                 # Improved summary detection - check for various indicators
                 is_summary = False
@@ -518,7 +508,7 @@ Specific Instructions:
                 # Non-bullet text that looks like a summary
                 elif stripped_line and not first_point and (is_summary or is_last_content):
                     # Add extra breaks for non-bullet summary paragraph
-                    if formatted_parts and not formatted_parts[-1] == "<<BREAK>>":
+                    if formatted_parts and formatted_parts[-1] != "<<BREAK>>":
                         formatted_parts.append("<<BREAK>>")
                         formatted_parts.append("<<BREAK>>")
                     formatted_parts.append(stripped_line)
@@ -527,7 +517,7 @@ Specific Instructions:
                 elif stripped_line and not first_point:
                     # Handle intro/summary lines *after* the first bullet
                     # Add break before non-bullet lines if needed
-                    if formatted_parts and not formatted_parts[-1] == "<<BREAK>>":
+                    if formatted_parts and formatted_parts[-1] != "<<BREAK>>":
                         formatted_parts.append("<<BREAK>>")
                     formatted_parts.append(stripped_line)
                 elif stripped_line and first_point:
@@ -546,7 +536,7 @@ Specific Instructions:
         # These likely go into tables, so keep their original JSON/List format processing
         list_prompts = [PromptName.CONQUAL, PromptName.CONIMPROV]
         for prompt_key in list_prompts:
-            if prompt_key in results and results[prompt_key]:
+            if results.get(prompt_key):
                 original_data = results[prompt_key]
                 prompt_key_original = PromptName(f"{prompt_key}_original")
                 # Store original JSON if it's a string that looks like JSON

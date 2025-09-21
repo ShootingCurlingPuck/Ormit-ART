@@ -63,11 +63,7 @@ def replace_placeholder_in_docx(
 
 
 def update_document(
-    output_dic: dict[str, Any],
-    name: str,
-    assessor: str,
-    gender: Gender,
-    program: Program,
+    output_dic: dict[str, Any], name: str, assessor: str, gender: Gender, program: Program
 ) -> str | None:
     """Updates the Word document."""
     try:
@@ -92,11 +88,7 @@ def update_document(
     ]
     for prompt_key in dynamic_prompts:
         replacement_text = output_dic.get(prompt_key, "")
-        if prompt_key in [
-            "prompt2_firstimpr",
-            "prompt3_personality",
-            "prompt4_cogcap_remarks",
-        ]:
+        if prompt_key in ["prompt2_firstimpr", "prompt3_personality", "prompt4_cogcap_remarks"]:
             replacement_text = replacePiet(replacement_text, name, gender)
         replacements[f"{{{prompt_key}}}"] = replacement_text
 
@@ -120,10 +112,7 @@ def update_document(
 
     # --- Handle list prompts that may contain "Piet" ---
     # Operate on the _original JSON data for these prompts
-    list_prompt_keys_original = [
-        "prompt6a_conqual_original",
-        "prompt6b_conimprov_original",
-    ]
+    list_prompt_keys_original = ["prompt6a_conqual_original", "prompt6b_conimprov_original"]
     for original_key in list_prompt_keys_original:
         if original_key in output_dic:
             list_str = output_dic.get(original_key, "[]")
@@ -198,10 +187,11 @@ def update_document(
         split_paragraphs_at_marker_and_style(doc)  # This handles the display format
         doc.save(updated_doc_path)
         print(f"Document saved: {updated_doc_path}")  # Added print statement
-        return updated_doc_path
     except Exception as e:
         print(f"Error: Failed to save document: {e}")
         return None
+    else:
+        return updated_doc_path
 
 
 def format_datatools_output(datatools_json_string: str) -> str:
@@ -228,13 +218,13 @@ def format_interests_output(interests_json_string: str) -> str:
         interests_list = ast.literal_eval(interests_json_string)
 
         # If the list contains only 'N/A', return a placeholder
-        if interests_list == ["N/A"] or interests_list == ["N/A"]:
+        if interests_list == ["N/A"]:
             return "No specific interests identified"
 
         formatted_text = ""
         for interest in interests_list:
             # Skip 'N/A' entries
-            if interest == "N/A" or interest == "N/A":
+            if interest == "N/A":
                 continue
             formatted_text += f"- {interest}\n"
 
@@ -337,14 +327,14 @@ def add_interests_table(doc: Document, interests_text: str) -> None:
         return
 
     # Handle the case where interests_text is 'N/A'
-    if interests_text == "N/A" or interests_text == "N/A":
+    if interests_text == "N/A":
         interests_string = "No specific interests identified"
     elif isinstance(interests_text, str):
         # Clean the string
         interests_text = interests_text.replace("\\", "")
 
         # If the entire string is just N/A in quotes
-        if interests_text.strip() == '"N/A"' or interests_text.strip() == "'N/A'":
+        if interests_text.strip() in ("'N/A'", '"N/A"'):
             interests_string = "No specific interests identified"
         else:
             # Process as a list
@@ -352,9 +342,7 @@ def add_interests_table(doc: Document, interests_text: str) -> None:
                 interests_list = safe_literal_eval(interests_text, [])
 
                 # Filter out N/A values
-                interests_list = [
-                    s for s in interests_list if s != "N/A" and s != "N/A" and s is not None
-                ]
+                interests_list = [s for s in interests_list if s != "N/A" and s is not None]
 
                 if not interests_list:
                     interests_string = "No specific interests identified"
@@ -411,16 +399,16 @@ def conclusion(doc: Document, column: int, list_items: list[Any]) -> None:
             # Add pseudo-bullet for visual consistency within the table cell
             safe_add_paragraph(cell, f"•  {point}")
         elif point:  # Handle non-string items if necessary
-            safe_add_paragraph(cell, f"•  {str(point)}")
+            safe_add_paragraph(cell, f"•  {point!s}")
 
 
 def update_language_skills_table(doc: Document, language_levels: list[str]) -> None:
-    """
-    Updates the language skills table (14th table) with language proficiency levels.
+    """Updates the language skills table (14th table) with language proficiency levels.
 
     Args:
         doc: The Word document
         language_levels: List of language levels [Dutch, French, English]
+
     """
     # Get the language skills table (14th table)
     table = safe_get_table(doc, LANGUAGE_SKILLS_TABLE_INDEX)

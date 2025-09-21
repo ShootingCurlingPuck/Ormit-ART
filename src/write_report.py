@@ -9,14 +9,7 @@ from docx.document import Document
 from docx.shared import Inches, Pt
 from docx.table import _Cell
 
-from src.constants import (
-    Font,
-    FontSize,
-    Gender,
-    Language,
-    Program,
-    PromptName,
-)
+from src.constants import Font, FontSize, Gender, Language, Program, PromptName
 from src.report_utils import (
     replace_and_format_header_text,
     replace_piet_in_list,
@@ -143,7 +136,7 @@ class ReportWriter(ABC):
             first_cell_text = row.cells[0].text.strip()
             second_cell_text = row.cells[1].text.strip()
             cell = safe_get_cell(table, row_index, 2)
-            personal_detail = cell_texts.get(first_cell_text, None)
+            personal_detail = cell_texts.get(first_cell_text)
 
             if second_cell_text != ":" or cell is None or personal_detail is None:
                 continue
@@ -154,7 +147,6 @@ class ReportWriter(ABC):
 
     def _add_icon_to_cell(self, cell: _Cell, score: Literal[-1, 0, 1] | None) -> Document:
         """Adds an icon based on the score to a cell."""
-
         safe_set_text(cell, "")
 
         if score is None:
@@ -242,10 +234,7 @@ class DataReportWriter(ReportWriter):
 
         # --- Handle list prompts that may contain "Piet" ---
         # Operate on the _original JSON data for these prompts
-        list_prompt_keys_original = [
-            PromptName.CONQUAL_ORIGINAL,
-            PromptName.CONIMPROV_ORIGINAL,
-        ]
+        list_prompt_keys_original = [PromptName.CONQUAL_ORIGINAL, PromptName.CONIMPROV_ORIGINAL]
         for original_key in list_prompt_keys_original:
             if original_key in output_dic:
                 list_str = output_dic.get(original_key, "[]")
@@ -320,10 +309,11 @@ class DataReportWriter(ReportWriter):
             split_paragraphs_at_marker_and_style(doc)  # This handles the display format
             doc.save(updated_doc_path)
             print(f"Document saved: {updated_doc_path}")  # Added print statement
-            return updated_doc_path
         except Exception as e:
             print(f"Error: Failed to save document: {e}")
             return None
+        else:
+            return updated_doc_path
 
 
 class IcpReportWriter(ReportWriter):

@@ -96,8 +96,7 @@ def add_content_detailstable(doc: Document, personal_details: list[str]) -> None
             if first_cell_text == "Date of birth" and second_cell_text == ":":
                 cell = safe_get_cell(table, row_index, 2)
                 safe_set_text(
-                    cell,
-                    restructure_date(personal_details[1]) if len(personal_details) > 1 else "",
+                    cell, restructure_date(personal_details[1]) if len(personal_details) > 1 else ""
                 )
 
             if first_cell_text == "Position" and second_cell_text == ":":
@@ -107,8 +106,7 @@ def add_content_detailstable(doc: Document, personal_details: list[str]) -> None
             if first_cell_text == "Assessment date" and second_cell_text == ":":
                 cell = safe_get_cell(table, row_index, 2)
                 safe_set_text(
-                    cell,
-                    restructure_date(personal_details[3]) if len(personal_details) > 3 else "",
+                    cell, restructure_date(personal_details[3]) if len(personal_details) > 3 else ""
                 )
 
             if first_cell_text == "Pool" and second_cell_text == ":":
@@ -117,8 +115,7 @@ def add_content_detailstable(doc: Document, personal_details: list[str]) -> None
 
 
 def add_icon_to_cell(cell: _Cell, score: int | None) -> None:
-    """
-    Adds an icon based on the score to a cell.
+    """Adds an icon based on the score to a cell.
 
     This function has been updated to handle None values properly, which are
     now used to represent "N/A" instead of -99.

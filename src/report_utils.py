@@ -1,5 +1,4 @@
-"""
-Report Utilities Module
+"""Report Utilities Module.
 
 This module contains common helper functions used by both the MCP and Data Chiefs
 report generation scripts. This helps to avoid code duplication and ensures
@@ -25,8 +24,7 @@ from src.constants import Font, FontSize, Gender
 
 
 def resource_path(relative_path: str) -> str:
-    """
-    Get absolute path to resource, works for dev and PyInstaller.
+    """Get absolute path to resource, works for dev and PyInstaller.
 
     This function helps finding resources whether the script is run directly
     or from a bundled executable created with PyInstaller.
@@ -40,8 +38,7 @@ def resource_path(relative_path: str) -> str:
 
 # --- Document Handling Functions ---
 def safe_get_table(doc: Document, table_index: int, default: Any = None) -> Table | Any:
-    """
-    Safely retrieves a table, returning default if not found.
+    """Safely retrieves a table, returning default if not found.
 
     Args:
         doc: The document object
@@ -50,6 +47,7 @@ def safe_get_table(doc: Document, table_index: int, default: Any = None) -> Tabl
 
     Returns:
         The table object or default value
+
     """
     try:
         return doc.tables[table_index]
@@ -59,8 +57,7 @@ def safe_get_table(doc: Document, table_index: int, default: Any = None) -> Tabl
 
 
 def safe_get_cell(table: Table, row_index: int, col_index: int, default: Any = None) -> _Cell | Any:
-    """
-    Safely retrieves a cell, returning default if not found.
+    """Safely retrieves a cell, returning default if not found.
 
     Args:
         table: The table object
@@ -70,6 +67,7 @@ def safe_get_cell(table: Table, row_index: int, col_index: int, default: Any = N
 
     Returns:
         The cell object or default value
+
     """
     try:
         return table.cell(row_index, col_index)
@@ -79,12 +77,12 @@ def safe_get_cell(table: Table, row_index: int, col_index: int, default: Any = N
 
 
 def safe_set_text(cell: _Cell, text: str) -> None:
-    """
-    Safely sets cell text, clearing existing content.
+    """Safely sets cell text, clearing existing content.
 
     Args:
         cell: The cell object
         text: Text content to set
+
     """
     if cell:
         for p in cell.paragraphs:
@@ -97,12 +95,12 @@ def safe_set_text(cell: _Cell, text: str) -> None:
 
 
 def safe_add_paragraph(cell: _Cell, text: str) -> None:
-    """
-    Safely adds a paragraph to a cell with proper formatting.
+    """Safely adds a paragraph to a cell with proper formatting.
 
     Args:
         cell: The cell object
         text: Text content to add
+
     """
     if cell:
         paragraph = cell.add_paragraph(text)
@@ -111,26 +109,25 @@ def safe_add_paragraph(cell: _Cell, text: str) -> None:
         run.font.size = Pt(FontSize.MEDIUM.value)
 
         r = run._element
-        rPr = r.rPr
-        if rPr is None:
-            rPr = OxmlElement("w:rPr")
-            r.append(rPr)
+        run_pr = r.rPr
+        if run_pr is None:
+            run_pr = OxmlElement("w:rPr")
+            r.append(run_pr)
 
-        rFonts = OxmlElement("w:rFonts")
-        rFonts.set(
+        run_fonts = OxmlElement("w:rFonts")
+        run_fonts.set(
             "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}ascii",
             Font.MONTSERRAT_LIGHT.value,
         )
-        rFonts.set(
+        run_fonts.set(
             "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}hAnsi",
             Font.MONTSERRAT_LIGHT.value,
         )
-        rPr.append(rFonts)
+        run_pr.append(run_fonts)
 
 
 def safe_literal_eval(s: str, default: Any | None = None) -> Any:
-    """
-    Safely evaluates a string as a Python literal, removing backslashes.
+    """Safely evaluates a string as a Python literal, removing backslashes.
 
     Args:
         s: String to evaluate
@@ -142,6 +139,7 @@ def safe_literal_eval(s: str, default: Any | None = None) -> Any:
     Note:
         This improved version replaces 'N/A' with None instead of -99
         for better clarity and safety.
+
     """
     try:
         s = s.replace("\\", "")
@@ -163,13 +161,14 @@ def shuttle_text(shuttle: list[Run]) -> str:
 
 
 def replace_text_preserving_format(doc: Document, data: dict[str, str]) -> None:
-    """
-    Replaces text in paragraphs and tables, preserving formatting.
+    """Replaces text in paragraphs and tables, preserving formatting.
     Handles cases where the text to replace spans multiple runs.
+
     Args:
         doc: The python-docx Document object.
         data: A dictionary {key_to_replace: replacement_value}.
               Replacement value may contain '<<BREAK>>' markers.
+
     """
     print("Replacing text while preserving format...")
     paragraphs = list(doc.paragraphs)
@@ -228,7 +227,6 @@ def replace_text_preserving_format(doc: Document, data: dict[str, str]) -> None:
                     # Key found spanning runs from 'begin' to 'end'
                     shuttle = p.runs[begin : end + 1]
                     full_shuttle_text = shuttle_text(shuttle)
-                    # print(f"Found '{key_to_find}' in runs {begin}-{end}: {[r.text for r in shuttle]}")
 
                     # Perform the replacement
                     start_index_in_full = full_shuttle_text.find(key_to_find)
@@ -272,26 +270,21 @@ def replace_text_preserving_format(doc: Document, data: dict[str, str]) -> None:
                     begin = end + 1  # Move past the runs we just processed
                     continue  # Continue the outer while loop
 
-                else:
-                    # Key not found starting at 'begin', advance 'begin'
-                    begin += 1
+                # Key not found starting at 'begin', advance 'begin'
+                begin += 1
     print("Text replacement finished.")
-
-
-# Remove or comment out the old add_bulleted_content function
-# def add_bulleted_content(doc, content, target_paragraph=None): ...
 
 
 # --- Text Processing Functions ---
 def clean(text: str) -> str:
-    """
-    Cleans input text by removing markdown and special characters.
+    """Cleans input text by removing markdown and special characters.
 
     Args:
         text: Text to clean
 
     Returns:
         Cleaned text
+
     """
     return (
         re.sub(r"[\【】`]|(```python)|(\*\*)", "", str(text)).strip()
@@ -301,8 +294,7 @@ def clean(text: str) -> str:
 
 
 def replacePiet(text: str, name: str, gender: Gender) -> str:
-    """
-    Replaces 'Piet' and handles gender-specific pronouns.
+    """Replaces 'Piet' and handles gender-specific pronouns.
 
     Args:
         text: Text to process
@@ -311,6 +303,7 @@ def replacePiet(text: str, name: str, gender: Gender) -> str:
 
     Returns:
         Processed text
+
     """
     text = text.replace("Piet", name.split()[0])
     text = re.sub(r"\bthe trainee\b", name.split()[0], text, flags=re.IGNORECASE)
@@ -346,8 +339,7 @@ def replacePiet(text: str, name: str, gender: Gender) -> str:
 
 
 def replace_piet_in_list(items_list: list[Any], name: str, gender: Gender) -> list[Any]:
-    """
-    Replaces 'Piet' in each string item of a list.
+    """Replaces 'Piet' in each string item of a list.
 
     Args:
         items_list: List of items to process
@@ -356,6 +348,7 @@ def replace_piet_in_list(items_list: list[Any], name: str, gender: Gender) -> li
 
     Returns:
         Processed list
+
     """
     result: list[Any] = []
     for item in items_list:
@@ -367,31 +360,31 @@ def replace_piet_in_list(items_list: list[Any], name: str, gender: Gender) -> li
 
 
 def restructure_date(date_str: str) -> str:
-    """
-    Restructures date string to DD-MM-YYYY format.
+    """Restructures date string to DD-MM-YYYY format.
 
     Args:
         date_str: Date string to restructure
 
     Returns:
         Restructured date string or empty string if invalid
+
     """
     date_str = date_str.replace("/", "-")
 
     try:
         datetime.strptime(date_str, "%d-%m-%Y")
-        return date_str
     except ValueError:
         try:
             date_obj = datetime.strptime(date_str, "%Y-%m-%d")
             return date_obj.strftime("%d-%m-%Y")
         except ValueError:
             return ""
+    else:
+        return date_str
 
 
 def replace_and_format_header_text(doc: Document, new_text: str) -> None:
-    """
-    Replaces header text and formats it with correct styling.
+    """Replaces header text and formats it with correct styling.
 
     Args:
         doc: The document object
@@ -399,6 +392,7 @@ def replace_and_format_header_text(doc: Document, new_text: str) -> None:
 
     Returns:
         None
+
     """
     for section in doc.sections:
         header = section.header
@@ -411,15 +405,14 @@ def replace_and_format_header_text(doc: Document, new_text: str) -> None:
                     run.font.color.rgb = RGBColor(*(0xED, 0x6B, 0x55))
                     run.bold = True
                     run.italic = False
-                    rFonts = OxmlElement("w:rFonts")
-                    rFonts.set(qn("w:ascii"), Font.MONTSERRAT_REGULAR.value)
-                    rFonts.set(qn("w:hAnsi"), Font.MONTSERRAT_REGULAR.value)
-                    run._element.rPr.append(rFonts)
+                    run_fonts = OxmlElement("w:rFonts")
+                    run_fonts.set(qn("w:ascii"), Font.MONTSERRAT_REGULAR.value)
+                    run_fonts.set(qn("w:hAnsi"), Font.MONTSERRAT_REGULAR.value)
+                    run._element.rPr.append(run_fonts)
 
 
 def clean_up(loc_dic: str) -> dict[str, Any]:
-    """
-    Loads and cleans JSON data, handling Gemini variations.
+    """Loads and cleans JSON data, handling Gemini variations.
 
     This is a unified version of the clean_up function used by both
     report generation scripts.
@@ -429,9 +422,10 @@ def clean_up(loc_dic: str) -> dict[str, Any]:
 
     Returns:
         Dictionary with cleaned data
+
     """
     try:
-        with open(loc_dic, "r", encoding="utf-8") as f:
+        with open(loc_dic, encoding="utf-8") as f:
             loaded_data: dict[str, Any] = json.load(f)
 
         cleaned_data: dict[str, Any] = {}
@@ -449,15 +443,15 @@ def clean_up(loc_dic: str) -> dict[str, Any]:
             else:
                 cleaned_data[key] = clean(value)
 
-        return cleaned_data
     except (FileNotFoundError, json.JSONDecodeError) as e:
         print(f"Error: Error loading/cleaning JSON: {e}")
         return {}
+    else:
+        return cleaned_data
 
 
 def split_paragraphs_at_marker_and_style(doc: Document) -> None:
-    """
-    Iterates through the document, splits paragraphs containing '<<BREAK>>',
+    """Iterates through the document, splits paragraphs containing '<<BREAK>>',
     creates new paragraphs, and applies 'List Bullet' style to lines starting with '•'.
     Must be called *after* all placeholders have been replaced.
     """
@@ -497,35 +491,35 @@ def split_paragraphs_at_marker_and_style(doc: Document) -> None:
                 # A workaround: add text directly via XML, apply style via XML
                 if stripped_part:
                     # Apply style (List Bullet or Normal) via XML
-                    pPr = OxmlElement("w:pPr")
-                    pStyle = OxmlElement("w:pStyle")
+                    paragraph_pr = OxmlElement("w:pPr")
+                    paragraph_style = OxmlElement("w:pStyle")
                     style_name = "List Bullet" if stripped_part.startswith("•") else "Normal"
-                    pStyle.set(qn("w:val"), style_name)
-                    pPr.append(pStyle)
+                    paragraph_style.set(qn("w:val"), style_name)
+                    paragraph_pr.append(paragraph_style)
                     # If bullet style, add numbering properties (assuming ID 1 again)
                     if style_name == "List Bullet":
-                        numPr = OxmlElement("w:numPr")
+                        number_pr = OxmlElement("w:numPr")
                         ilvl = OxmlElement("w:ilvl")
                         ilvl.set(qn("w:val"), "0")
-                        numId = OxmlElement("w:numId")
-                        numId.set(qn("w:val"), "1")  # Check this ID!
-                        numPr.append(ilvl)
-                        numPr.append(numId)
-                        pPr.append(numPr)
-                    new_p.append(pPr)
+                        number_id = OxmlElement("w:numId")
+                        number_id.set(qn("w:val"), "1")  # Check this ID!
+                        number_pr.append(ilvl)
+                        number_pr.append(number_id)
+                        paragraph_pr.append(number_pr)
+                    new_p.append(paragraph_pr)
 
                     # Add text run via XML
                     run_element = OxmlElement("w:r")
                     # Apply font within the run properties if needed
-                    rPr_run = OxmlElement("w:rPr")
-                    rFonts = OxmlElement("w:rFonts")
-                    rFonts.set(qn("w:ascii"), Font.MONTSERRAT_REGULAR.value)
-                    rFonts.set(qn("w:hAnsi"), Font.MONTSERRAT_REGULAR.value)
+                    run_pr = OxmlElement("w:rPr")
+                    run_fonts = OxmlElement("w:rFonts")
+                    run_fonts.set(qn("w:ascii"), Font.MONTSERRAT_REGULAR.value)
+                    run_fonts.set(qn("w:hAnsi"), Font.MONTSERRAT_REGULAR.value)
                     sz = OxmlElement("w:sz")
                     sz.set(qn("w:val"), f"{FontSize.MEDIUM.value * 2}")  # Size in half-points
-                    rPr_run.append(rFonts)
-                    rPr_run.append(sz)
-                    run_element.append(rPr_run)
+                    run_pr.append(run_fonts)
+                    run_pr.append(sz)
+                    run_element.append(run_pr)
                     # Add the text element
                     t_element = OxmlElement("w:t")
                     t_element.text = (

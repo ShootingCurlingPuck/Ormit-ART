@@ -32,7 +32,7 @@ lint.extend-select = [
     "COM",  # Flake8-commas – trailing/comma issues
     # "CPY",  # Flake8-copyright – copyright header checks
     "C4",   # Flake8-comprehensions – best practices in comprehensions
-    "DTZ",  # Flake8-datetimez – requires timezone-aware datetime objects
+    # "DTZ",  # Flake8-datetimez – requires timezone-aware datetime objects
     "T10",  # Flake8-debugger – debugger statements (e.g. pdb)
     "DJ",   # Flake8-django – Django-specific conventions
     "EM",   # Flake8-errmsg – error message style
@@ -57,7 +57,7 @@ lint.extend-select = [
     "TC",   # Flake8-type-checking – proper import of typing in type checks
     "INT",  # Flake8-gettext – checks for proper internationalization usage
     "ARG",  # Flake8-unused-arguments – flags unused function arguments
-    "PTH",  # Flake8-use-pathlib – encourages pathlib over os.path
+    # "PTH",  # Flake8-use-pathlib – encourages pathlib over os.path
     "TD",   # Flake8-todos – flags TODO comments
     "FIX",  # Flake8-fixme – flags FIXME comments
     # "ERA",  # Eradicate – detects commented-out code (potentially dangerous)
@@ -73,14 +73,12 @@ lint.extend-select = [
     "FURB", # Refurb – rules for code refurbishment
     # "DOC",  # Pydoclint – docstring linting and consistency
     "RUF",  # Ruff-specific rules – additional Ruff checks
+    "ERA001", # Eradicate - Checks for commented-out Python code.
+    "T201", # Flake8-print - Checks for print statements.
 ]
 
 lint.ignore = [
-    "D100",    # Pydocstyle - missing docstring in public module
-    "D101",    # Pydocstyle - missing docstring in public class
-    "D104",  # Pydocstyle - missing docstring in public package
-    "D106",  # Pydocstyle - missing docstring in public nested class
-    "D107",  # Pydocstyle - missing docstring in __init__
+    "D10",    # Pydocstyle - missing docstring in public module
     "FBT003", # Flake8-boolean-trap - boolean position value in function call
     "D203",  # Pydocstyle - one blank line required before class docstring
     "D401",  # Pydocstyle - Checks for docstring first lines that are not in an imperative mood.
@@ -89,6 +87,9 @@ lint.ignore = [
     "FA102", # Flake8-future-annotations - Missing `from __future__ import annotations`, but uses PEP 604 union
     "TRY003", # Tryceratops - Checks for long exception messages that are not defined in the exception class itself.
     "EM101", # Flake8-errmsg - Checks for the use of string literals in exception constructors.
+    "COM812", # Flake8-commas - Checks for missing trailing commas in multi-line collections.
+    "S605", # Flake8-bandit - Checks for calls that start a process with a shell.
+    "S606", # Flake8-bandit - Checks for functions that start a process without a shell.
 ]
 line-length = 100
 
