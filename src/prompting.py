@@ -214,7 +214,6 @@ def send_prompts(data: GuiData | IcpGuiData) -> str:
         prompt_text, temperature = prompt_data.text, prompt_data.temperature
 
         # --- Inject SPECIFIC ICP Info with HIGH EMPHASIS ---
-        final_prompt_text = prompt_text
         icp_instruction = ""
 
         if selected_program == Program.ICP:
@@ -226,7 +225,7 @@ def send_prompts(data: GuiData | IcpGuiData) -> str:
                 icp_instruction = icp_info_p6b
 
             if icp_instruction:  # Only modify if specific info was provided
-                final_prompt_text = f"""\
+                prompt_text = f"""\
 ########################################################################
 # CRITICAL INSTRUCTION OVERRIDE FOR THIS TASK                          #
 ########################################################################
@@ -244,6 +243,9 @@ Specific Instructions:
 {prompt_text}"""
                 logger.info(f"Applied CRITICAL ICP info to prompt {prompt_name}")
 
+        # Construct the full prompt using the general context
+        full_prompt = f"{prompt_text}\n\nUse the following files to complete the tasks. Do not give any output for this prompt.\n{general_context}"
+
         # Prepare generation config with temperature
         generation_config: genai_types.GenerateContentConfigOrDict = {"temperature": temperature}
 
@@ -257,9 +259,6 @@ Specific Instructions:
             global_signals.update_message.emit(
                 f"Using AI thinking for prompt {promno} ({prompt_name})..."
             )
-
-        # Construct the full prompt using the general context
-        full_prompt = f"{final_prompt_text}\n\nUse the following files to complete the tasks. Do not give any output for this prompt.\n{general_context}"
 
         # Initial attempt
         max_attempts = 3  # Maximum number of attempts per prompt
