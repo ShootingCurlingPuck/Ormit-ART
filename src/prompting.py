@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(LOGGER_NAME)
 
 # Set the default Gemini model for all prompts
-default_model = "gemini-2.5-flash-preview-04-17"
+default_model = "gemini-2.0-flash-001"
 
 
 def read_pdf(file_path: str) -> str:
