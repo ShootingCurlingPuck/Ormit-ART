@@ -19,9 +19,9 @@ class FileTypeFilter(StrEnum):
 
 
 class FileCategory(StrEnum):
-    DRIVE = "Drive"
-    SWIPE = "Swipe"
-    BRAIN = "Brain"
+    DRIVE = "Drive Report"
+    SWIPE = "Swipe Report"
+    BRAIN = "Brain Report"
     NOTES = "Assessment Notes"
     ICP = "ICP Description File"
 

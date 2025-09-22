@@ -5,7 +5,7 @@ import shutil
 
 import fitz
 
-from src.constants import LOGGER_NAME, FileCategory
+from src.constants import LOGGER_NAME
 from src.data_models import GuiData, IcpGuiData
 
 logger = logging.getLogger(LOGGER_NAME)
@@ -115,17 +115,7 @@ def redact_folder(gui_data: GuiData | IcpGuiData) -> None:
         # Determine destination name in temp directory
         extension = os.path.splitext(file_path)[1][1:].lower()
         # Use standard names expected by send_prompts
-        if file_key == FileCategory.DRIVE:
-            dest_path = f"temp/PAPI Gebruikersrapport.{extension}"
-        elif file_key == FileCategory.BRAIN:
-            dest_path = f"temp/Cog. Test.{extension}"
-        elif file_key == FileCategory.NOTES:
-            dest_path = f"temp/Assessment Notes.{extension}"
-        elif file_key == FileCategory.ICP:
-            dest_path = f"temp/ICP Description.{extension}"
-        else:
-            # For any other files, keep original name
-            dest_path = f"temp/{os.path.basename(file_path)}"
+        dest_path = f"temp/{file_key}.{extension}"
 
         try:
             # Copy the file to temp directory
@@ -135,7 +125,7 @@ def redact_folder(gui_data: GuiData | IcpGuiData) -> None:
             # Update the file path in GUI_data to point to the new location
             gui_data.files[file_key] = dest_path
         except Exception:
-            logger.exception(f"Error copying {file_path}to temp directory")
+            logger.exception(f"Error copying {file_path} to temp directory")
             continue
 
     # --- Now redact the files in the temp directory ---
