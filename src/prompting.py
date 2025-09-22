@@ -218,21 +218,12 @@ def send_prompts(data: GuiData | IcpGuiData) -> str:
     # Set the file path to be in the output directory
     filename_with_timestamp = os.path.join(output_dir, f"{appl_name}_{formatted_time}.json")
 
-    path_to_notes = "temp/Assessment Notes.pdf"
-    path_to_persontest = "temp/PAPI Gebruikersrapport.pdf"
-    path_to_cogcap = "temp/Cog. Test.pdf"
     path_to_contextfile = "resources/Context and Task Description.docx"
     path_to_toneofvoice = "resources/Examples Personality Section.docx"
     path_to_mngtprofile = "resources/The MNGT Profile.docx"
     path_to_dataprofile = "resources/The Data Chiefs profile.docx"
 
-    lst_files = [
-        path_to_notes,
-        path_to_persontest,
-        path_to_cogcap,
-        path_to_contextfile,
-        path_to_toneofvoice,
-    ]
+    lst_files = [*os.listdir("temp/"), path_to_contextfile, path_to_toneofvoice]
 
     selected_program = data.traineeship
     # Use MNGT profile for both MNGT and NEW programs
@@ -241,16 +232,17 @@ def send_prompts(data: GuiData | IcpGuiData) -> str:
     else:  # Handles MNGT, NEW, and any potential unknown as MNGT
         lst_files.append(path_to_mngtprofile)
 
-    file_contents: dict[str, str] = {}
+    file_contents: dict[FileCategory, str] = {}
     for file_path in lst_files:
-        file_name = os.path.basename(file_path)
-        if file_path.endswith(".pdf"):
-            file_contents[file_name] = read_pdf(file_path)
-        elif file_path.endswith(".docx"):
-            file_contents[file_name] = read_docx(file_path)
+        file_name, extension = os.path.splitext(os.path.basename(file_path))
+        file_category = FileCategory(file_name)
+        if extension.lower() == ".pdf":
+            file_contents[file_category] = read_pdf(file_path)
+        elif extension.lower() == ".docx":
+            file_contents[file_category] = read_docx(file_path)
         else:
             logger.warning(f"Unsupported file format for {file_path}")
-            file_contents[file_name] = ""
+            file_contents[file_category] = ""
 
     # --- Read ICP Description File (if applicable) --- Append to file_contents
     icp_description_content = ""
@@ -260,12 +252,10 @@ def send_prompts(data: GuiData | IcpGuiData) -> str:
             try:
                 icp_description_content = read_docx(icp_file_path)
                 # Add with a clear key to context
-                file_contents["ICP Traineeship Description.docx"] = icp_description_content
+                file_contents[FileCategory.ICP] = icp_description_content
             except Exception:
                 logger.exception(f"Error reading ICP description from {icp_file_path}")
-                file_contents["ICP Traineeship Description.docx"] = (
-                    "[Error reading ICP description]"
-                )
+                file_contents[FileCategory.ICP] = "[Error reading ICP description]"
         else:
             logger.warning(f"ICP Description file path not found or file missing: {icp_file_path}")
             # Don't add to file_contents if missing
