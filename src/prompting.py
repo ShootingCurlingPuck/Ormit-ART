@@ -232,17 +232,18 @@ def send_prompts(data: GuiData | IcpGuiData) -> str:
     else:  # Handles MNGT, NEW, and any potential unknown as MNGT
         lst_files.append(path_to_mngtprofile)
 
-    file_contents: dict[FileCategory, str] = {}
+    file_contents: dict[str, str] = {}
     for file_path in lst_files:
         file_name, extension = os.path.splitext(os.path.basename(file_path))
-        file_category = FileCategory(file_name)
+        if "/" not in file_path:
+            file_path = f"temp/{file_path}"
         if extension.lower() == ".pdf":
-            file_contents[file_category] = read_pdf(file_path)
+            file_contents[file_name] = read_pdf(file_path)
         elif extension.lower() == ".docx":
-            file_contents[file_category] = read_docx(file_path)
+            file_contents[file_name] = read_docx(file_path)
         else:
             logger.warning(f"Unsupported file format for {file_path}")
-            file_contents[file_category] = ""
+            file_contents[file_name] = ""
 
     # --- Read ICP Description File (if applicable) --- Append to file_contents
     icp_description_content = ""
