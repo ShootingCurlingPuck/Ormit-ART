@@ -157,7 +157,7 @@ def add_icon_to_cell(cell: _Cell, score: int | None) -> None:
 
 
 def format_datatools_output(datatools_json_string: str) -> str:
-    """Formats data tools output (not used in MCP, kept for consistency)."""
+    """Formats data tools output (not used in MNGT, kept for consistency)."""
     try:
         return "\n".join(
             f"- {tool}: {level}" for tool, level in ast.literal_eval(datatools_json_string).items()

@@ -3,7 +3,7 @@
 ART is a Python-based application designed to automate the generation of assessment reports for ORMIT Talent. The tool leverages Gemini AI to analyze assessment data and produce professional, consistently formatted reports.
 
 ## Features
-- **Multiple Program Types**: Supports various assessment types including MCP, DATA, and ICP
+- **Multiple Program Types**: Supports various assessment types including MNGT, DATA, and ICP
 - **Automated Report Generation**: Transforms assessment data into structured Word document reports
 - **Sensitive Data Protection**: Automatically redacts candidate and assessor personal information
 - **AI-Powered Analysis**: Uses Gemini AI to extract insights from assessment materials
@@ -33,7 +33,7 @@ ART is a Python-based application designed to automate the generation of assessm
 
 1. **Input Data Collection**:
    - Enter candidate's name, assessor's name, and select gender
-   - Choose traineeship program (MCP, DATA, ICP, NEW)
+   - Choose traineeship program (MNGT, DATA, ICP, NEW)
    - Upload required assessment documents:
      - PAPI Report
      - Cognitive Test results
@@ -65,7 +65,7 @@ The application consists of several key components:
 - **main.py**: GUI interface and main application logic
 - **prompting.py**: Handles communication with Gemini API
 - **redact.py**: Processes and redacts sensitive information
-- **write_report_mcp.py**: Generates reports for MCP and NEW traineeships
+- **write_report_mngt.py**: Generates reports for MNGT and NEW traineeships
 - **write_report_data.py**: Generates reports for DATA traineeships 
 - **report_utils.py**: Shared utilities for report generation
 - **global_signals.py**: Handles cross-component communication

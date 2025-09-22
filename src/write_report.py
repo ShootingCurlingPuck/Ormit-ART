@@ -165,7 +165,7 @@ class ReportWriter(ABC):
         return self.doc
 
     def _format_datatools_output(self, datatools_json_string: str) -> str:
-        """Formats data tools output (not used in MCP, kept for consistency)."""
+        """Formats data tools output (not used in MNGT, kept for consistency)."""
         try:
             return "\n".join(
                 f"- {tool}: {level}"

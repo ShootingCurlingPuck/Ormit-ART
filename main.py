@@ -24,7 +24,7 @@ from PyQt6.QtWidgets import (
 )
 
 import src.write_report_data as data_write_report
-import src.write_report_mcp as mcp_write_report
+import src.write_report_mngt as mngt_write_report
 from src.constants import (
     LOGGER_NAME,
     REQUIRED_FILE_CATEGORIES,
@@ -86,7 +86,7 @@ class ProcessingThread(QThread):
             selected_program = self.gui_data.traineeship
 
             if selected_program in (Program.MNGT, Program.ICP):
-                updated_doc = mcp_write_report.update_document(
+                updated_doc = mngt_write_report.update_document(
                     clean_data,
                     self.gui_data.applicant_name,
                     self.gui_data.assessor_name,
@@ -102,11 +102,11 @@ class ProcessingThread(QThread):
                     self.gui_data.traineeship,
                 )
             else:
-                # Default fallback (can remain MCP or be made more specific if needed)
+                # Default fallback (can remain MNGT or be made more specific if needed)
                 global_signals.update_message.emit(
-                    f"Warning: Unknown program '{selected_program}', defaulting to MCP report."
+                    f"Warning: Unknown program '{selected_program}', defaulting to MNGT report."
                 )
-                updated_doc = mcp_write_report.update_document(
+                updated_doc = mngt_write_report.update_document(
                     clean_data,
                     self.gui_data.applicant_name,
                     self.gui_data.assessor_name,

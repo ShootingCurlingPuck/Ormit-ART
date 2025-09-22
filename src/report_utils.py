@@ -1,6 +1,6 @@
 """Report Utilities Module.
 
-This module contains common helper functions used by both the MCP and Data Chiefs
+This module contains common helper functions used by both the MNGT and Data Chiefs
 report generation scripts. This helps to avoid code duplication and ensures
 consistent functionality across both report types.
 """

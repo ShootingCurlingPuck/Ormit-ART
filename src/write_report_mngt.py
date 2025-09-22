@@ -35,7 +35,7 @@ from src.write_report_common import (
 logger = logging.getLogger(LOGGER_NAME)
 
 
-# --- Constants specific to MCP report template ---
+# --- Constants specific to MNGT report template ---
 DETAILS_TABLE_INDEX = 0
 COGCAP_TABLE_INDEX = 1
 CONCLUSION_TABLE_INDEX = 2
@@ -105,9 +105,9 @@ def set_font_properties2(para) -> None:
 def update_document(
     output_dic: dict[str, Any], name: str, assessor: str, gender: Gender, program: Program
 ) -> str | None:
-    """Updates the Word document (MCP version)."""
+    """Updates the Word document (MNGT version)."""
     try:
-        doc = docx.Document(resource_path("resources/template.docx"))  # MCP Template
+        doc = docx.Document(resource_path("resources/template.docx"))  # MNGT Template
     except Exception:
         logger.exception("Failed to open template")
         return None
@@ -220,7 +220,7 @@ def update_document(
 
 
 def format_datatools_output(datatools_json_string: str) -> str:
-    """Formats data tools output (not used in MCP, kept for consistency)."""
+    """Formats data tools output (not used in MNGT, kept for consistency)."""
     try:
         return "\n".join(
             f"- {tool}: {level}" for tool, level in ast.literal_eval(datatools_json_string).items()
@@ -230,7 +230,7 @@ def format_datatools_output(datatools_json_string: str) -> str:
 
 
 def format_interests_output(interests_json_string: str) -> str:
-    """Formats interests output (not directly used in MCP, kept for consistency)."""
+    """Formats interests output (not directly used in MNGT, kept for consistency)."""
     try:
         return "\n".join(f"- {interest}" for interest in ast.literal_eval(interests_json_string))
     except (ValueError, SyntaxError):
@@ -238,7 +238,7 @@ def format_interests_output(interests_json_string: str) -> str:
 
 
 def add_icons2(doc: Document, list_scores: list[int]) -> None:
-    """Adds icons to the profile review tables (MCP version)."""
+    """Adds icons to the profile review tables (MNGT version)."""
     if not isinstance(list_scores, list):
         logger.warning("list_scores is not a list.")  # Example of console warning
         return

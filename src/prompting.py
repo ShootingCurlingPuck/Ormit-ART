@@ -104,7 +104,7 @@ def send_prompts(data: GuiData | IcpGuiData) -> str:
     path_to_cogcap = "temp/Cog. Test.pdf"
     path_to_contextfile = "resources/Context and Task Description.docx"
     path_to_toneofvoice = "resources/Examples Personality Section.docx"
-    path_to_mcpprofile = "resources/The MCP Profile.docx"
+    path_to_mngtprofile = "resources/The MNGT Profile.docx"
     path_to_dataprofile = "resources/The Data Chiefs profile.docx"
 
     lst_files = [
@@ -116,11 +116,11 @@ def send_prompts(data: GuiData | IcpGuiData) -> str:
     ]
 
     selected_program = data.traineeship
-    # Use MCP profile for both MCP and NEW programs
+    # Use MNGT profile for both MNGT and NEW programs
     if selected_program == Program.DATA:
         lst_files.append(path_to_dataprofile)
-    else:  # Handles MCP, NEW, and any potential unknown as MCP
-        lst_files.append(path_to_mcpprofile)
+    else:  # Handles MNGT, NEW, and any potential unknown as MNGT
+        lst_files.append(path_to_mngtprofile)
 
     file_contents: dict[str, str] = {}
     for file_path in lst_files:
@@ -173,7 +173,7 @@ def send_prompts(data: GuiData | IcpGuiData) -> str:
         PromptName.CONIMPROV,
         PromptName.INTERESTS,
     ]
-    lst_prompts_mcp = [*common_prompts, PromptName.QUALSCORE]
+    lst_prompts_mngt = [*common_prompts, PromptName.QUALSCORE]
     lst_prompts_data = [*common_prompts, PromptName.QUALSCORE_DATA, PromptName.DATATOOLS]
 
     # Define which prompts are expected to return lists (for parsing/evaluation)
@@ -189,8 +189,8 @@ def send_prompts(data: GuiData | IcpGuiData) -> str:
     ]
 
     # --- Select appropriate list of prompts ---
-    # Use MCP prompts for both MCP and NEW programs
-    lst_prompts = lst_prompts_data if selected_program == Program.DATA else lst_prompts_mcp
+    # Use MNGT prompts for both MNGT and NEW programs
+    lst_prompts = lst_prompts_data if selected_program == Program.DATA else lst_prompts_mngt
 
     # --- Run Prompts ---
     results: dict[PromptName, str] = {}
@@ -323,10 +323,10 @@ Specific Instructions:
     # --- Retry Logic for Critical Prompts ---
     # This provides additional retries for specific critical prompts
     critical_prompts = [PromptName.CONIMPROV]
-    # Use MCP critical prompt for both MCP and NEW
+    # Use MNGT critical prompt for both MNGT and NEW
     if selected_program == Program.DATA:
         critical_prompts.append(PromptName.QUALSCORE_DATA)
-    else:  # Handles MCP, NEW, and any potential unknown as MCP
+    else:  # Handles MNGT, NEW, and any potential unknown as MNGT
         critical_prompts.append(PromptName.QUALSCORE)
 
     max_retries = 2
