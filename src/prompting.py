@@ -11,7 +11,14 @@ import pypdf
 from docx import Document
 from google import genai
 
-from src.constants import LOGGER_NAME, FileCategory, Program, PromptName
+from src.constants import (
+    GEMINI_MODEL,
+    LOGGER_NAME,
+    MAX_WAIT_TIME,
+    FileCategory,
+    Program,
+    PromptName,
+)
 from src.data_models import GuiData, IcpGuiData
 from src.global_signals import global_signals
 from src.prompts import prompts
@@ -20,9 +27,6 @@ if TYPE_CHECKING:
     from google.genai import types as genai_types
 
 logger = logging.getLogger(LOGGER_NAME)
-
-# Set the default Gemini model for all prompts
-default_model = "gemini-2.0-flash-001"
 
 
 def read_pdf(file_path: str) -> str:
@@ -64,9 +68,6 @@ def _extract_list_from_string(text: str) -> str:
         except (SyntaxError, ValueError):
             pass
     return "[]"
-
-
-max_wait_time = 200
 
 
 def send_prompts(data: GuiData | IcpGuiData) -> str:
@@ -275,7 +276,7 @@ Specific Instructions:
                     time.sleep(1)
 
                 response = client.models.generate_content(
-                    model=default_model, contents=full_prompt, config=generation_config
+                    model=GEMINI_MODEL, contents=full_prompt, config=generation_config
                 )
                 output_text = response.text
 
@@ -316,7 +317,7 @@ Specific Instructions:
 
             attempt += 1
 
-        if time.time() - start_time_all > max_wait_time:
+        if time.time() - start_time_all > MAX_WAIT_TIME:
             logger.warning("Timeout for all prompts reached.")
             break
 
@@ -336,7 +337,7 @@ Specific Instructions:
                 f"Result for critical prompt {prompt_name} still empty after initial attempts. Retrying..."
             )
             for attempt in range(max_retries):
-                if time.time() - start_time_all > max_wait_time:
+                if time.time() - start_time_all > MAX_WAIT_TIME:
                     logger.warning("Timeout reached during critical prompt retry.")
                     break  # Break retry loop if overall timeout hit
 
@@ -407,7 +408,7 @@ Specific Instructions:
 
                 try:
                     response = client.models.generate_content(
-                        model=default_model, contents=full_prompt_retry, config=generation_config
+                        model=GEMINI_MODEL, contents=full_prompt_retry, config=generation_config
                     )
                     output_text_retry = response.text
 
