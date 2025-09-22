@@ -355,7 +355,6 @@ Specific Instructions:
                 prompt_text, temperature = prompt_data.text, prompt_data.temperature
 
                 # --- Inject SPECIFIC ICP Info for RETRY with HIGH EMPHASIS ---
-                final_prompt_text_retry = prompt_text
                 icp_instruction_retry = ""  # Reset for retry
 
                 if selected_program == Program.ICP:
@@ -368,7 +367,7 @@ Specific Instructions:
                         icp_instruction_retry = icp_info_p6b
 
                     if icp_instruction_retry:  # Only modify if specific info was provided
-                        final_prompt_text_retry = f"""\
+                        prompt_text = f"""\
 ########################################################################
 # CRITICAL INSTRUCTION OVERRIDE FOR THIS TASK (RETRY ATTEMPT)          #
 ########################################################################
@@ -385,6 +384,8 @@ Specific Instructions:
 --- Original Prompt ---
 {prompt_text}"""
                         logger.info(f"Applied CRITICAL ICP info to RETRY prompt {prompt_name}")
+
+                full_prompt_retry = f"{prompt_text}\n\nUse the following files to complete the tasks. Do not give any output for this prompt.\n{general_context}"
 
                 # Prepare generation config with temperature
                 generation_config: genai_types.GenerateContentConfigOrDict = {
@@ -403,7 +404,6 @@ Specific Instructions:
                     )
 
                 # Use general_context built earlier
-                full_prompt_retry = f"{final_prompt_text_retry}\n\nUse the following files to complete the tasks. Do not give any output for this prompt.\n{general_context}"
 
                 try:
                     response = client.models.generate_content(
