@@ -25,7 +25,14 @@ from PyQt6.QtWidgets import (
 
 import src.write_report_data as data_write_report
 import src.write_report_mcp as mcp_write_report
-from src.constants import REQUIRED_FILE_CATEGORIES, FileCategory, FileTypeFilter, Gender, Program
+from src.constants import (
+    LOGGER_NAME,
+    REQUIRED_FILE_CATEGORIES,
+    FileCategory,
+    FileTypeFilter,
+    Gender,
+    Program,
+)
 from src.data_models import GuiData, IcpGuiData
 from src.global_signals import global_signals
 from src.prompting import send_prompts
@@ -33,7 +40,7 @@ from src.redact import redact_folder
 from src.report_utils import clean_up, resource_path
 
 # Set up logging
-logger = logging.getLogger("ART-logger")
+logger = logging.getLogger(LOGGER_NAME)
 with open("logging_config.json") as config:
     logging_config = json.load(config)
 logging.config.dictConfig(logging_config)
