@@ -193,9 +193,8 @@ def process_prompt_results(results: dict[PromptName, str]) -> dict[Any, str]:
 def send_prompts(data: GuiData | IcpGuiData) -> str:
     global_signals.update_message.emit("Connecting to Gemini...")
 
-    GOOGLE_API_KEY = data.gemini_key
     # Create client with API key
-    client = genai.Client(api_key=GOOGLE_API_KEY)
+    client = genai.Client(api_key=data.gemini_key)
 
     # Get the thinking setting from GUI data
     enable_thinking = data.enable_thinking
