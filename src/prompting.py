@@ -21,7 +21,7 @@ from src.constants import (
 )
 from src.data_models import GuiData, IcpGuiData
 from src.global_signals import global_signals
-from src.prompts import prompts
+from src.prompts import PROMPTS
 
 if TYPE_CHECKING:
     from google.genai import types as genai_types
@@ -99,13 +99,13 @@ def send_prompts(data: GuiData | IcpGuiData) -> str:
     # Set the file path to be in the output directory
     filename_with_timestamp = os.path.join(output_dir, f"{appl_name}_{formatted_time}.json")
 
-    path_to_notes = r"temp/Assessment Notes.pdf"
-    path_to_persontest = r"temp/PAPI Gebruikersrapport.pdf"
-    path_to_cogcap = r"temp/Cog. Test.pdf"
-    path_to_contextfile = r"resources/Context and Task Description.docx"
-    path_to_toneofvoice = r"resources/Examples Personality Section.docx"
-    path_to_mcpprofile = r"resources/The MCP Profile.docx"
-    path_to_dataprofile = r"resources/The Data Chiefs profile.docx"
+    path_to_notes = "temp/Assessment Notes.pdf"
+    path_to_persontest = "temp/PAPI Gebruikersrapport.pdf"
+    path_to_cogcap = "temp/Cog. Test.pdf"
+    path_to_contextfile = "resources/Context and Task Description.docx"
+    path_to_toneofvoice = "resources/Examples Personality Section.docx"
+    path_to_mcpprofile = "resources/The MCP Profile.docx"
+    path_to_dataprofile = "resources/The Data Chiefs profile.docx"
 
     lst_files = [
         path_to_notes,
@@ -207,7 +207,7 @@ def send_prompts(data: GuiData | IcpGuiData) -> str:
             f"Submitting prompt {promno}/{len(lst_prompts)}, please wait..."
         )
 
-        prompt_data = next(filter(lambda p: p.name == prompt_name, prompts), None)
+        prompt_data = next(filter(lambda p: p.name == prompt_name, PROMPTS), None)
         if prompt_data is None:
             logger.error(f"Prompt data not found for {prompt_name}")
             continue
@@ -349,7 +349,7 @@ Specific Instructions:
                 time.sleep(1)
 
                 # Reuse prompt details from initial run
-                prompt_data = next(filter(lambda p: p.name == prompt_name, prompts), None)
+                prompt_data = next(filter(lambda p: p.name == prompt_name, PROMPTS), None)
                 if prompt_data is None:
                     logger.error(f"Prompt data not found for {prompt_name} during retry")
                     continue

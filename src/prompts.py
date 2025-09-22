@@ -1,7 +1,7 @@
 from src.constants import PromptName
 from src.data_models import Prompt
 
-prompts = [
+PROMPTS = [
     Prompt(
         name=PromptName.FIRST_IMPRESSION,
         text="""You're an Assessor at Ormit Talent.  Give a concise first impression of a trainee named Piet (max 35 words).
