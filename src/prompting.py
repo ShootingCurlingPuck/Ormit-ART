@@ -70,6 +70,126 @@ def _extract_list_from_string(text: str) -> str:
     return "[]"
 
 
+def process_prompt_results(results: dict[PromptName, str]) -> dict[Any, str]:
+    """Process the results from the prompts to ensure proper formatting."""
+    # Format personality section (prompt3_personality) for template insertion
+    if PromptName.PERSONALITY in results:
+        text = results[PromptName.PERSONALITY]
+        lines = text.split("\n")
+        formatted_parts: list[str] = []
+        first_point = True
+
+        # Check for summary indicators
+        summary_indicators = [
+            "in summary",
+            "to summarize",
+            "overall",
+            "in conclusion",
+            "to conclude",
+            "in short",
+            "is a promising",
+            "makes him a promising",
+            "makes her a promising",
+            "these qualities make",
+        ]
+
+        for i, line in enumerate(lines):
+            stripped_line = line.strip()
+            is_bullet = stripped_line.startswith(("*", "•"))
+
+            # Improved summary detection - check for various indicators
+            is_summary = False
+            lower_line = stripped_line.lower()
+
+            # Check if this is the last paragraph/bullet (likely to be summary)
+            is_last_content = i == len(lines) - 1 or all(
+                not line.strip() for line in lines[i + 1 :]
+            )
+
+            # Check if this contains any summary indicators
+            for indicator in summary_indicators:
+                if indicator in lower_line:
+                    is_summary = True
+                    break
+
+            # Special handling for last bullet that looks like a summary
+            if is_bullet and (is_summary or is_last_content):
+                content = stripped_line[1:].strip()
+                if first_point:
+                    # First point's text goes directly after the template bullet
+                    formatted_parts.append(content)
+                    first_point = False
+                else:
+                    # Add TWO extra breaks for the summary bullet point
+                    formatted_parts.append("<<BREAK>>")
+                    formatted_parts.append("<<BREAK>>")
+                    formatted_parts.append(f"• {content}")
+
+            # Regular bullet handling (no change to existing logic)
+            elif is_bullet:
+                content = stripped_line[1:].strip()
+                if first_point:
+                    # First point's text goes directly after the template bullet
+                    formatted_parts.append(content)
+                    first_point = False
+                else:
+                    formatted_parts.append("<<BREAK>>")
+                    formatted_parts.append(f"• {content}")
+
+            # Non-bullet text that looks like a summary
+            elif stripped_line and not first_point and (is_summary or is_last_content):
+                # Add extra breaks for non-bullet summary paragraph
+                if formatted_parts and formatted_parts[-1] != "<<BREAK>>":
+                    formatted_parts.append("<<BREAK>>")
+                    formatted_parts.append("<<BREAK>>")
+                formatted_parts.append(stripped_line)
+
+            # Regular text handling (no change)
+            elif stripped_line and not first_point:
+                # Handle intro/summary lines *after* the first bullet
+                # Add break before non-bullet lines if needed
+                if formatted_parts and formatted_parts[-1] != "<<BREAK>>":
+                    formatted_parts.append("<<BREAK>>")
+                formatted_parts.append(stripped_line)
+            elif stripped_line and first_point:
+                # Handle intro line *before* any bullets
+                formatted_parts.append(stripped_line)
+                # Don't set first_point = False yet, wait for actual bullet
+
+        # Join parts, <<BREAK>> will be handled later
+        # We join with a space just to ensure parts are concatenated.
+        # The <<BREAK>> marker is the important part for splitting.
+        results[PromptName.PERSONALITY] = " ".join(formatted_parts).replace(
+            "<<BREAK>> ", "<<BREAK>>"
+        )
+
+    # --- Format list prompts (prompt6a/b) ---
+    # These likely go into tables, so keep their original JSON/List format processing
+    list_prompts = [PromptName.CONQUAL, PromptName.CONIMPROV]
+    for prompt_key in list_prompts:
+        if results.get(prompt_key):
+            original_data = results[prompt_key]
+            prompt_key_original = PromptName(f"{prompt_key}_original")
+            # Store original JSON if it's a string that looks like JSON
+            if original_data.strip().startswith("["):
+                results[prompt_key_original] = original_data
+                # Attempt to parse, but prioritize keeping original if error
+                try:
+                    items = json.loads(original_data)
+                    results[prompt_key] = items if isinstance(items, list) else original_data
+                except (json.JSONDecodeError, TypeError):
+                    results[prompt_key] = original_data  # Keep original string on error
+            elif isinstance(original_data, list):
+                results[prompt_key] = original_data  # Already a list
+                results[prompt_key_original] = json.dumps(original_data)  # Store JSON version
+            else:
+                # Not a list or JSON string, store original and keep as is
+                results[prompt_key_original] = str(original_data)
+                results[prompt_key] = original_data
+
+    return results
+
+
 def send_prompts(data: GuiData | IcpGuiData) -> str:
     global_signals.update_message.emit("Connecting to Gemini...")
 
@@ -441,125 +561,6 @@ Specific Instructions:
                 logger.error(f"Critical prompt still empty after all attempts for {prompt_name}")
 
     # --- End Retry Logic ---
-
-    def process_prompt_results(results: dict[PromptName, str]) -> dict[Any, str]:
-        """Process the results from the prompts to ensure proper formatting."""
-        # Format personality section (prompt3_personality) for template insertion
-        if PromptName.PERSONALITY in results:
-            text = results[PromptName.PERSONALITY]
-            lines = text.split("\n")
-            formatted_parts: list[str] = []
-            first_point = True
-
-            # Check for summary indicators
-            summary_indicators = [
-                "in summary",
-                "to summarize",
-                "overall",
-                "in conclusion",
-                "to conclude",
-                "in short",
-                "is a promising",
-                "makes him a promising",
-                "makes her a promising",
-                "these qualities make",
-            ]
-
-            for i, line in enumerate(lines):
-                stripped_line = line.strip()
-                is_bullet = stripped_line.startswith(("*", "•"))
-
-                # Improved summary detection - check for various indicators
-                is_summary = False
-                lower_line = stripped_line.lower()
-
-                # Check if this is the last paragraph/bullet (likely to be summary)
-                is_last_content = i == len(lines) - 1 or all(
-                    not line.strip() for line in lines[i + 1 :]
-                )
-
-                # Check if this contains any summary indicators
-                for indicator in summary_indicators:
-                    if indicator in lower_line:
-                        is_summary = True
-                        break
-
-                # Special handling for last bullet that looks like a summary
-                if is_bullet and (is_summary or is_last_content):
-                    content = stripped_line[1:].strip()
-                    if first_point:
-                        # First point's text goes directly after the template bullet
-                        formatted_parts.append(content)
-                        first_point = False
-                    else:
-                        # Add TWO extra breaks for the summary bullet point
-                        formatted_parts.append("<<BREAK>>")
-                        formatted_parts.append("<<BREAK>>")
-                        formatted_parts.append(f"• {content}")
-
-                # Regular bullet handling (no change to existing logic)
-                elif is_bullet:
-                    content = stripped_line[1:].strip()
-                    if first_point:
-                        # First point's text goes directly after the template bullet
-                        formatted_parts.append(content)
-                        first_point = False
-                    else:
-                        formatted_parts.append("<<BREAK>>")
-                        formatted_parts.append(f"• {content}")
-
-                # Non-bullet text that looks like a summary
-                elif stripped_line and not first_point and (is_summary or is_last_content):
-                    # Add extra breaks for non-bullet summary paragraph
-                    if formatted_parts and formatted_parts[-1] != "<<BREAK>>":
-                        formatted_parts.append("<<BREAK>>")
-                        formatted_parts.append("<<BREAK>>")
-                    formatted_parts.append(stripped_line)
-
-                # Regular text handling (no change)
-                elif stripped_line and not first_point:
-                    # Handle intro/summary lines *after* the first bullet
-                    # Add break before non-bullet lines if needed
-                    if formatted_parts and formatted_parts[-1] != "<<BREAK>>":
-                        formatted_parts.append("<<BREAK>>")
-                    formatted_parts.append(stripped_line)
-                elif stripped_line and first_point:
-                    # Handle intro line *before* any bullets
-                    formatted_parts.append(stripped_line)
-                    # Don't set first_point = False yet, wait for actual bullet
-
-            # Join parts, <<BREAK>> will be handled later
-            # We join with a space just to ensure parts are concatenated.
-            # The <<BREAK>> marker is the important part for splitting.
-            results[PromptName.PERSONALITY] = " ".join(formatted_parts).replace(
-                "<<BREAK>> ", "<<BREAK>>"
-            )
-
-        # --- Format list prompts (prompt6a/b) ---
-        # These likely go into tables, so keep their original JSON/List format processing
-        list_prompts = [PromptName.CONQUAL, PromptName.CONIMPROV]
-        for prompt_key in list_prompts:
-            if results.get(prompt_key):
-                original_data = results[prompt_key]
-                prompt_key_original = PromptName(f"{prompt_key}_original")
-                # Store original JSON if it's a string that looks like JSON
-                if original_data.strip().startswith("["):
-                    results[prompt_key_original] = original_data
-                    # Attempt to parse, but prioritize keeping original if error
-                    try:
-                        items = json.loads(original_data)
-                        results[prompt_key] = items if isinstance(items, list) else original_data
-                    except (json.JSONDecodeError, TypeError):
-                        results[prompt_key] = original_data  # Keep original string on error
-                elif isinstance(original_data, list):
-                    results[prompt_key] = original_data  # Already a list
-                    results[prompt_key_original] = json.dumps(original_data)  # Store JSON version
-                else:
-                    # Not a list or JSON string, store original and keep as is
-                    results[prompt_key_original] = str(original_data)
-                    results[prompt_key] = original_data
-
-        return results
 
     results = process_prompt_results(results)
 
