@@ -1,11 +1,14 @@
 import contextlib
+import logging
 import os
 import shutil
 
 import fitz
 
-from src.constants import FileCategory
+from src.constants import LOGGER_NAME, FileCategory
 from src.data_models import GuiData, IcpGuiData
+
+logger = logging.getLogger(LOGGER_NAME)
 
 
 class Redactor:
@@ -13,15 +16,15 @@ class Redactor:
         self.target_names = [
             name for name in target_names if name
         ]  # Ensure list and remove empty strings
-        print(f"Redactor initialized to target: {self.target_names}")  # Debug print
+        logger.debug(f"Redactor initialized to target: {self.target_names}")
 
     def redaction(self, filename: str) -> None:
         """Performs redaction on the given PDF filename."""
         if not self.target_names:
-            print(f"Skipping redaction for {filename}: No target names provided.")
+            logger.warning(f"Skipping redaction: No target names provided for {filename}")
             return
 
-        print(f"Starting redaction for: {filename}")  # Debug print
+        logger.debug(f"Starting redaction for {filename}")
         try:
             doc = fitz.open(filename)
             changes = 0
@@ -30,8 +33,8 @@ class Redactor:
                     # --- Redact full name ---
                     sensitive_areas = page.search_for(name_to_redact, quads=True)
                     if sensitive_areas:
-                        print(
-                            f"  Found '{name_to_redact}' {len(sensitive_areas)} times on page {page.number}"
+                        logger.debug(
+                            f"Found {len(sensitive_areas)} sensitive areas for {name_to_redact} on page {page.number} of {filename}"
                         )
                         changes += len(sensitive_areas)
                         for quad in sensitive_areas:
@@ -50,14 +53,14 @@ class Redactor:
             if changes > 0:
                 # Save the redacted file, overwriting the original in the temp folder
                 doc.save(filename, incremental=True, encryption=fitz.PDF_ENCRYPT_KEEP)
-                print(f"  Applied {changes} redactions to {filename}")
+                logger.info(f"Applied redactions for {filename} - {changes} changes made")
             else:
-                print(f"  No target names found in {filename}")
+                logger.info(f"No target names found for {filename}")
 
             doc.close()
 
-        except Exception as e:
-            print(f"ERROR during redaction of {filename}: {e}")
+        except Exception:
+            logger.exception(f"Error during redaction for {filename}")
             # Ensure the document is closed even if an error occurs during processing
             if "doc" in locals() and doc:
                 with contextlib.suppress(Exception):
@@ -84,27 +87,29 @@ def redact_folder(gui_data: GuiData | IcpGuiData) -> None:
 
     # Instantiate Redactor ONCE with the names
     if not target_names_list:
-        print("Warning: No Applicant or Assessor names provided for redaction. Skipping redaction.")
+        logger.warning("No Applicant or Assessor names provided for redaction. Skipping redaction.")
         return  # No names to redact
 
     try:
         redactor = Redactor(target_names=target_names_list)
-    except Exception as e:
-        print(f"Error initializing Redactor: {e}")
+    except Exception:
+        logger.exception("Error initializing Redactor")
         return
 
-    print("Starting redaction process on provided files...")
+    logger.info("Starting redaction process on provided files...")
 
     # --- Iterate through the files provided by the user ---
     files_to_process = gui_data.files
     if not files_to_process:
-        print("Warning: No files found in GUI_data['Files'] to process.")
+        logger.warning("No files found in gui_data.files to process.")
         return
 
     # --- First, copy all files to the temp directory ---
     for file_key, file_path in files_to_process.items():
         if not file_path or not os.path.isfile(file_path):
-            print(f"Skipping copy for '{file_key}': File path missing or invalid ('{file_path}')")
+            logger.warning(
+                f"Skipping copy: File path missing or invalid for {file_key} - {file_path}"
+            )
             continue
 
         # Determine destination name in temp directory
@@ -124,31 +129,29 @@ def redact_folder(gui_data: GuiData | IcpGuiData) -> None:
 
         try:
             # Copy the file to temp directory
-            print(f"Copying {file_path} to {dest_path}")
+            logger.info(f"Copying {file_path} to {dest_path}")
             shutil.copy2(file_path, dest_path)
 
             # Update the file path in GUI_data to point to the new location
             gui_data.files[file_key] = dest_path
-        except Exception as e:
-            print(f"Error copying file {file_path} to temp directory: {e}")
+        except Exception:
+            logger.exception(f"Error copying {file_path}to temp directory")
             continue
 
     # --- Now redact the files in the temp directory ---
     for file_key, file_path in gui_data.files.items():
         # Skip if file path is invalid after copying
         if not file_path or not os.path.isfile(file_path):
-            print(
-                f"Skipping redaction for '{file_key}': File path missing or invalid after copy ('{file_path}')"
-            )
+            logger.warning(f"Skipping redaction for {file_key} - {file_path}")
             continue
 
         # --- Only redact PDF files ---
         if file_path.lower().endswith(".pdf"):
-            print(f"Processing PDF file: {file_path}")
+            logger.info(f"Processing PDF file: {file_path}")
             try:
                 redactor.redaction(filename=file_path)  # Pass the correct filename
-            except Exception as e:
+            except Exception:
                 # Log error but continue with other files
-                print(f"ERROR redacting file {file_path}: {e}")
+                logger.exception(f"Error redacting file: {file_path}")
 
-    print("Redaction process finished.")
+    logger.info("Redaction process finished.")

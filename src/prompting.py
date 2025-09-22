@@ -1,5 +1,6 @@
 import ast
 import json
+import logging
 import os
 import re
 import time
@@ -10,13 +11,15 @@ import pypdf
 from docx import Document
 from google import genai
 
-from src.constants import FileCategory, Program, PromptName
+from src.constants import LOGGER_NAME, FileCategory, Program, PromptName
 from src.data_models import GuiData, IcpGuiData
 from src.global_signals import global_signals
 from src.prompts import prompts
 
 if TYPE_CHECKING:
     from google.genai import types as genai_types
+
+logger = logging.getLogger(LOGGER_NAME)
 
 # Set the default Gemini model for all prompts
 default_model = "gemini-2.5-flash-preview-04-17"
@@ -30,8 +33,8 @@ def read_pdf(file_path: str) -> str:
             reader = pypdf.PdfReader(file)
             for page in reader.pages:
                 text += page.extract_text() + "\n"
-    except Exception as e:
-        print(f"Error reading PDF {file_path}: {e}")
+    except Exception:
+        logger.exception(f"Error reading PDF file {file_path}")
     return text
 
 
@@ -42,8 +45,8 @@ def read_docx(file_path: str) -> str:
         doc = Document(file_path)
         for paragraph in doc.paragraphs:
             text += paragraph.text + "\n"
-    except Exception as e:
-        print(f"Error reading DOCX {file_path}: {e}")
+    except Exception:
+        logger.exception(f"Error reading DOCX file {file_path}")
     return text
 
 
@@ -126,7 +129,7 @@ def send_prompts(data: GuiData | IcpGuiData) -> str:
         elif file_path.endswith(".docx"):
             file_contents[file_name] = read_docx(file_path)
         else:
-            print(f"Warning: Unsupported file type: {file_path}")
+            logger.warning(f"Unsupported file format for {file_path}")
             file_contents[file_name] = ""
 
     # --- Read ICP Description File (if applicable) --- Append to file_contents
@@ -138,13 +141,13 @@ def send_prompts(data: GuiData | IcpGuiData) -> str:
                 icp_description_content = read_docx(icp_file_path)
                 # Add with a clear key to context
                 file_contents["ICP Traineeship Description.docx"] = icp_description_content
-            except Exception as e:
-                print(f"Error reading ICP description file {icp_file_path}: {e}")
+            except Exception:
+                logger.exception(f"Error reading ICP description from {icp_file_path}")
                 file_contents["ICP Traineeship Description.docx"] = (
                     "[Error reading ICP description]"
                 )
         else:
-            print(f"Warning: ICP Description file path not found or file missing: {icp_file_path}")
+            logger.warning(f"ICP Description file path not found or file missing: {icp_file_path}")
             # Don't add to file_contents if missing
 
     # --- Get ICP Specific Prompt Info --- (Store them for use in the loop)
@@ -205,7 +208,7 @@ def send_prompts(data: GuiData | IcpGuiData) -> str:
 
         prompt_data = next(filter(lambda p: p.name == prompt_name, prompts), None)
         if prompt_data is None:
-            print(f"Error: Prompt data not found for {prompt_name}")
+            logger.error(f"Prompt data not found for {prompt_name}")
             continue
         prompt_text, temperature = prompt_data.text, prompt_data.temperature
 
@@ -238,7 +241,7 @@ Specific Instructions:
 
 --- Original Prompt ---
 {prompt_text}"""
-                print(f"Applied CRITICAL ICP info to prompt: {prompt_name}")
+                logger.info(f"Applied CRITICAL ICP info to prompt {prompt_name}")
 
         # Prepare generation config with temperature
         generation_config: genai_types.GenerateContentConfigOrDict = {"temperature": temperature}
@@ -283,15 +286,15 @@ Specific Instructions:
                         results[prompt_name] = result
                         success = True
                     else:
-                        print(
-                            f"Warning: Empty list result for prompt '{prompt_name}' on attempt {attempt + 1}."
+                        logger.warning(
+                            f"Empty list result for prompt {prompt_name} (attempt {attempt + 1})"
                         )
                 elif output_text is not None and output_text.strip():
                     results[prompt_name] = output_text.strip()
                     success = True
                 else:
-                    print(
-                        f"Warning: Empty text result for prompt '{prompt_name}' on attempt {attempt + 1}."
+                    logger.warning(
+                        f"Empty text result for prompt {prompt_name} (attempt {attempt + 1})"
                     )
 
                 # If this is the last attempt and we haven't succeeded, use whatever we got
@@ -300,12 +303,12 @@ Specific Instructions:
                         results[prompt_name] = _extract_list_from_string(output_text)
                     elif output_text is not None:
                         results[prompt_name] = output_text.strip()
-                    print(
-                        f"Warning: Using potentially empty result for '{prompt_name}' after {max_attempts} attempts."
+                    logger.warning(
+                        f"Using potentially empty result for prompt {prompt_name} (attempt {max_attempts})"
                     )
 
-            except Exception as e:
-                print(f"Error processing prompt {prompt_name} (attempt {attempt + 1}): {e}")
+            except Exception:
+                logger.exception(f"Error processing prompt {prompt_name} (attempt {attempt + 1})")
                 if attempt == max_attempts - 1:  # Last attempt
                     results[prompt_name] = (
                         "[]" if prompt_name in list_output_prompts else ""
@@ -314,7 +317,7 @@ Specific Instructions:
             attempt += 1
 
         if time.time() - start_time_all > max_wait_time:
-            print("Timeout for all prompts reached.")
+            logger.warning("Timeout for all prompts reached.")
             break
 
     # --- Retry Logic for Critical Prompts ---
@@ -329,12 +332,12 @@ Specific Instructions:
     max_retries = 2
     for prompt_name in critical_prompts:
         if prompt_name not in results or results[prompt_name] == "" or results[prompt_name] == "[]":
-            print(
-                f"Warning: Result for critical prompt '{prompt_name}' is still empty after initial attempts. Retrying..."
+            logger.warning(
+                f"Result for critical prompt {prompt_name} still empty after initial attempts. Retrying..."
             )
             for attempt in range(max_retries):
                 if time.time() - start_time_all > max_wait_time:
-                    print("Timeout reached during critical prompt retry.")
+                    logger.warning("Timeout reached during critical prompt retry.")
                     break  # Break retry loop if overall timeout hit
 
                 global_signals.update_message.emit(
@@ -347,7 +350,7 @@ Specific Instructions:
                 # Reuse prompt details from initial run
                 prompt_data = next(filter(lambda p: p.name == prompt_name, prompts), None)
                 if prompt_data is None:
-                    print(f"Error: Prompt data not found for {prompt_name}")
+                    logger.error(f"Prompt data not found for {prompt_name} during retry")
                     continue
                 prompt_text, temperature = prompt_data.text, prompt_data.temperature
 
@@ -381,7 +384,7 @@ Specific Instructions:
 
 --- Original Prompt ---
 {prompt_text}"""
-                        print(f"Applied CRITICAL ICP info to RETRY prompt: {prompt_name}")
+                        logger.info(f"Applied CRITICAL ICP info to RETRY prompt {prompt_name}")
 
                 # Prepare generation config with temperature
                 generation_config: genai_types.GenerateContentConfigOrDict = {
@@ -417,17 +420,17 @@ Specific Instructions:
 
                     # Check if retry was successful
                     if results[prompt_name] != "" and results[prompt_name] != "[]":
-                        print(
-                            f"Success: Extra retry for '{prompt_name}' successful on attempt {attempt + 1}."
+                        logger.info(
+                            f"Success: Extra retry for prompt {prompt_name} (attempt {attempt + 1})"
                         )
                         break  # Exit retry loop
-                    print(
-                        f"Warning: Extra retry attempt {attempt + 1} for '{prompt_name}' still resulted in empty response."
+                    logger.warning(
+                        f"Extra retry attempt still resulted in empty response for {prompt_name} (attempt {attempt + 1})"
                     )
 
-                except Exception as e:
-                    print(
-                        f"Error processing extra retry for prompt {prompt_name} (Attempt {attempt + 1}): {e}"
+                except Exception:
+                    logger.exception(
+                        f"Error processing extra retry for prompt {prompt_name} (attempt {attempt + 1})"
                     )
                     # Don't update results[prom] here as we want to keep the best result so far
 
@@ -435,7 +438,7 @@ Specific Instructions:
             if prompt_name in results and (
                 results[prompt_name] == "" or results[prompt_name] == "[]"
             ):
-                print(f"Error: Critical prompt '{prompt_name}' still empty after all attempts.")
+                logger.error(f"Critical prompt still empty after all attempts for {prompt_name}")
 
     # --- End Retry Logic ---
 

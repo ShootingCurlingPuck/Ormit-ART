@@ -1,4 +1,5 @@
 import ast
+import logging
 import os
 from datetime import datetime
 from typing import Any
@@ -10,7 +11,7 @@ from docx.oxml.ns import qn
 from docx.shared import Pt
 from docx.table import _Cell
 
-from src.constants import Gender, Program
+from src.constants import LOGGER_NAME, Gender, Program
 
 # Import common functions from report_utils
 from src.report_utils import (
@@ -30,6 +31,9 @@ from src.write_report_common import (
     add_content_detailstable,
     add_icon_to_cell,
 )
+
+logger = logging.getLogger(LOGGER_NAME)
+
 
 # --- Constants specific to MCP report template ---
 DETAILS_TABLE_INDEX = 0
@@ -104,8 +108,8 @@ def update_document(
     """Updates the Word document (MCP version)."""
     try:
         doc = docx.Document(resource_path("resources/template.docx"))  # MCP Template
-    except Exception as e:
-        print(f"Error: Failed to open template: {e}")  # Example of console error
+    except Exception:
+        logger.exception("Failed to open template")
         return None
 
     # --- Prepare Replacement Dictionary ---
@@ -142,8 +146,8 @@ def update_document(
                 )
                 replacements[placeholder] = proficiency_level
             else:
-                print(
-                    f"Warning: No proficiency level provided for {language_name}."
+                logger.warning(
+                    f"No proficiency level provided for {language_name}."
                 )  # Example of console warning
                 placeholder = f"{{prompt5_language_{language_name.lower()}}}"
                 replacements[placeholder] = "N/A"  # Or some default
@@ -162,7 +166,7 @@ def update_document(
                 list_items_pietless = replace_piet_in_list(list_items, name, gender)
                 output_dic[original_key] = list_items_pietless
             else:
-                print(f"Warning: Could not process {original_key} as a list after eval.")
+                logger.warning(f"Could not process {original_key} as a list after eval.")
                 output_dic[original_key] = []
         else:
             output_dic[original_key] = []
@@ -183,7 +187,7 @@ def update_document(
     if isinstance(qual_scores, list):
         add_icons2(doc, qual_scores)
     else:
-        print("Warning: Invalid qual_scores data.")
+        logger.warning("Invalid qual_scores data.")
 
     # --- Conclusion Table ---
     # (This section remains the same, using processed _original lists)
@@ -207,9 +211,9 @@ def update_document(
         # Apply final paragraph splitting and styling *before* saving
         split_paragraphs_at_marker_and_style(doc)
         doc.save(updated_doc_path)
-        print(f"Document saved: {updated_doc_path}")  # Added print statement
-    except Exception as e:
-        print(f"Error: Failed to save document: {e}")  # Example of console error
+        logger.info(f"Document saved: {updated_doc_path}")
+    except Exception:
+        logger.exception("Failed to save document")
         return None
     else:
         return updated_doc_path
@@ -236,7 +240,7 @@ def format_interests_output(interests_json_string: str) -> str:
 def add_icons2(doc: Document, list_scores: list[int]) -> None:
     """Adds icons to the profile review tables (MCP version)."""
     if not isinstance(list_scores, list):
-        print("Warning: list_scores is not a list.")  # Example of console warning
+        logger.warning("list_scores is not a list.")  # Example of console warning
         return
     table_no_start = FIRST_ICONS_TABLE
     score_index = 0
@@ -266,12 +270,12 @@ def conclusion(doc: Document, column: int, list_items: list[str]) -> None:
     try:
         table = doc.tables[CONCLUSION_TABLE_INDEX]
     except IndexError:
-        print(f"Warning: Could not find conclusion table at index {CONCLUSION_TABLE_INDEX}")
+        logger.warning(f"Could not find conclusion table at index {CONCLUSION_TABLE_INDEX}")
         return
 
     # Expecting list_items to be a Python list already
     if not isinstance(list_items, list):
-        print(f"Warning: conclusion expected a list, got {type(list_items)}")
+        logger.warning(f"conclusion expected a list, got {type(list_items)}")
         return
 
     try:
@@ -298,8 +302,8 @@ def conclusion(doc: Document, column: int, list_items: list[str]) -> None:
                             run.font.name = "Montserrat"
                             run.font.size = Pt(10)
                             run.bold = True
-                except Exception as e:
-                    print(f"Warning: Could not apply bullet style: {e}")
+                except Exception:
+                    logger.warning("Could not apply bullet style, using manual bullet instead.")
                     # Ensure paragraph has a bullet character
                     if not paragraph.text.startswith("•"):
                         paragraph.text = "• "
@@ -326,6 +330,6 @@ def conclusion(doc: Document, column: int, list_items: list[str]) -> None:
                 run_pr.append(run_fonts)
 
     except IndexError:
-        print(f"Warning: Could not access cell (1, {column}) in conclusion table")
-    except Exception as e:
-        print(f"Error adding conclusion to column {column}: {e}")
+        logger.exception(f"Could not access cell (1, {column}) in conclusion table")
+    except Exception:
+        logger.exception(f"Error adding conclusion to column {column}")

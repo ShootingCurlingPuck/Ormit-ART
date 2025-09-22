@@ -7,6 +7,7 @@ consistent functionality across both report types.
 
 import ast
 import json
+import logging
 import os
 import re
 import sys
@@ -20,7 +21,9 @@ from docx.shared import Pt, RGBColor
 from docx.table import Table, _Cell
 from docx.text.run import Run
 
-from src.constants import Font, FontSize, Gender
+from src.constants import LOGGER_NAME, Font, FontSize, Gender
+
+logger = logging.getLogger(LOGGER_NAME)
 
 
 def resource_path(relative_path: str) -> str:
@@ -52,7 +55,7 @@ def safe_get_table(doc: Document, table_index: int, default: Any = None) -> Tabl
     try:
         return doc.tables[table_index]
     except IndexError:
-        print(f"Warning: Table {table_index} not found.")
+        logger.warning(f"Table {table_index} not found.")
         return default
 
 
@@ -72,7 +75,7 @@ def safe_get_cell(table: Table, row_index: int, col_index: int, default: Any = N
     try:
         return table.cell(row_index, col_index)
     except IndexError:
-        print(f"Warning: Cell ({row_index}, {col_index}) not found.")
+        logger.warning(f"Cell ({row_index}, {col_index}) not found.")
         return default
 
 
@@ -147,8 +150,8 @@ def safe_literal_eval(s: str, default: Any | None = None) -> Any:
         s = s.replace("'N/A'", "None")
         s = s.replace('"N/A"', "None")
         return ast.literal_eval(s)
-    except (SyntaxError, ValueError) as e:
-        print(f"Error: Error evaluating string: {s} - {e}")
+    except (SyntaxError, ValueError):
+        logger.exception(f"Error evaluating string: {s}")
         return default
 
 
@@ -170,7 +173,7 @@ def replace_text_preserving_format(doc: Document, data: dict[str, str]) -> None:
               Replacement value may contain '<<BREAK>>' markers.
 
     """
-    print("Replacing text while preserving format...")
+    logger.info("Replacing text while preserving format...")
     paragraphs = list(doc.paragraphs)
     for table in doc.tables:
         for row in table.rows:
@@ -272,7 +275,7 @@ def replace_text_preserving_format(doc: Document, data: dict[str, str]) -> None:
 
                 # Key not found starting at 'begin', advance 'begin'
                 begin += 1
-    print("Text replacement finished.")
+    logger.info("Text replacement finished.")
 
 
 # --- Text Processing Functions ---
@@ -443,8 +446,8 @@ def clean_up(loc_dic: str) -> dict[str, Any]:
             else:
                 cleaned_data[key] = clean(value)
 
-    except (FileNotFoundError, json.JSONDecodeError) as e:
-        print(f"Error: Error loading/cleaning JSON: {e}")
+    except (FileNotFoundError, json.JSONDecodeError):
+        logger.exception("Error loading/cleaning JSON")
         return {}
     else:
         return cleaned_data
@@ -455,7 +458,7 @@ def split_paragraphs_at_marker_and_style(doc: Document) -> None:
     creates new paragraphs, and applies 'List Bullet' style to lines starting with '•'.
     Must be called *after* all placeholders have been replaced.
     """
-    print("Applying final paragraph splitting and styling for <<BREAK>> markers...")
+    logger.info("Applying final paragraph splitting and styling for <<BREAK>> markers...")
     # Iterate backwards through paragraphs to safely insert new ones
     # Using indices is safer when modifying the list of paragraphs
     i = len(doc.paragraphs) - 1
@@ -536,4 +539,4 @@ def split_paragraphs_at_marker_and_style(doc: Document) -> None:
 
         i -= 1  # Move to the previous paragraph index
 
-    print("Finished applying final styles for <<BREAK>> markers.")
+    logger.info("Finished applying final styles for <<BREAK>> markers.")

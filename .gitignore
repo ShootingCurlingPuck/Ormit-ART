@@ -5,3 +5,4 @@ output_reports/
 temp/
 *.pyc
 .venv
+*.log

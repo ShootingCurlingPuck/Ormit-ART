@@ -1,8 +1,10 @@
 import contextlib
+import json
+import logging
+import logging.config
 import os
 import stat
 import sys
-import traceback
 from typing import Any
 
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
@@ -29,6 +31,12 @@ from src.global_signals import global_signals
 from src.prompting import send_prompts
 from src.redact import redact_folder
 from src.report_utils import clean_up, resource_path
+
+# Set up logging
+logger = logging.getLogger("ART-logger")
+with open("logging_config.json") as config:
+    logging_config = json.load(config)
+logging.config.dictConfig(logging_config)
 
 # Define paths for resources
 logo_path_abs = "resources/ormittalentV3.png"
@@ -107,9 +115,7 @@ class ProcessingThread(QThread):
                 global_signals.update_message.emit("Error: Failed to generate report.")
 
         except Exception as e:
-            # Print full traceback for better debugging
-            traceback_str = traceback.format_exc()
-            print(f"Error in processing thread: {e}\n{traceback_str}")
+            logger.exception("Error in processing thread:")
             global_signals.update_message.emit(f"Error: {e!s}")
 
 
@@ -427,8 +433,8 @@ Cons: Slower response, higher cost.""")
                     key = f.read().strip()
                     if key:
                         self.openai_key_input.setText(key)
-        except Exception as e:
-            print(f"Warning: Could not load saved Gemini key: {e}")
+        except Exception:
+            logger.exception("Could not load saved Gemini key.")
 
     def _save_key(self, key: str) -> None:
         try:
@@ -437,8 +443,8 @@ Cons: Slower response, higher cost.""")
             # Set file permissions to user read/write only (if possible)
             with contextlib.suppress(Exception):
                 os.chmod(self.KEY_FILE, stat.S_IRUSR | stat.S_IWUSR)
-        except Exception as e:
-            print(f"Warning: Could not save Gemini key: {e}")
+        except Exception:
+            logger.exception("Could not load saved Gemini key.")
 
     def handle_submit(self) -> None:
         # Validate input

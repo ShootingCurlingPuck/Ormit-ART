@@ -1,10 +1,11 @@
 import ast
+import logging
 
 from docx.document import Document
 from docx.shared import Inches, Pt
 from docx.table import _Cell
 
-from src.constants import Font, FontSize
+from src.constants import LOGGER_NAME, Font, FontSize
 from src.report_utils import (
     resource_path,
     restructure_date,
@@ -13,6 +14,8 @@ from src.report_utils import (
     safe_literal_eval,
     safe_set_text,
 )
+
+logger = logging.getLogger(LOGGER_NAME)
 
 DETAILS_TABLE_INDEX = 0
 COGCAP_TABLE_INDEX = 1
@@ -35,7 +38,7 @@ def add_content_cogcaptable(doc: Document, scores_str: str) -> None:
 
     scores = safe_literal_eval(scores_str, [])
     if not isinstance(scores, list) or len(scores) != 6:
-        print("Warning: Invalid scores data. Expected a list of 6 numbers.")
+        logger.warning("Invalid scores data. Expected a list of 6 numbers.")
         return
 
     for i in range(6):
@@ -57,7 +60,7 @@ def add_content_cogcaptable(doc: Document, scores_str: str) -> None:
 def add_content_cogcaptable_remark(doc: Document, cogcap_output: str) -> None:
     """Adds remarks to the cognitive capacity table."""
     if not isinstance(cogcap_output, str):
-        print("Warning: cogcap_output is not a string.")
+        logger.warning("cogcap_output is not a string.")
         return
 
     table = safe_get_table(doc, COGCAP_TABLE_INDEX)
@@ -78,7 +81,7 @@ def add_content_detailstable(doc: Document, personal_details: list[str]) -> None
         return
 
     if not isinstance(personal_details, list):
-        print("Warning: personal_details is not a list.")
+        logger.warning("personal_details is not a list.")
         return
 
     if len(personal_details) == 1 and all(isinstance(ele, str) for ele in personal_details):
@@ -121,7 +124,7 @@ def add_icon_to_cell(cell: _Cell, score: int | None) -> None:
     now used to represent "N/A" instead of -99.
     """
     if cell is None:
-        print("Warning: add_icon_to_cell called with None cell.")
+        logger.warning("add_icon_to_cell called with None cell.")
         return
 
     safe_set_text(cell, "")
@@ -130,7 +133,7 @@ def add_icon_to_cell(cell: _Cell, score: int | None) -> None:
         try:
             score = int(score) if score is not None else None
         except (ValueError, TypeError):
-            print(f"Warning: Non-integer score encountered: {score}. Using N/A.")
+            logger.warning(f"Non-integer score encountered: {score}. Using N/A.")
             run = cell.paragraphs[0].add_run("N/A")
             run.font.name = Font.MONTSERRAT_REGULAR.value
             run.font.size = Pt(FontSize.SMALL.value)
@@ -150,7 +153,7 @@ def add_icon_to_cell(cell: _Cell, score: int | None) -> None:
     elif score == 1:
         run.add_picture(resource_path("resources/strong.png"), width=Inches(0.3))
     else:
-        print(f"Warning: Invalid score value: {score}")
+        logger.warning(f"Invalid score value: {score}")
 
 
 def format_datatools_output(datatools_json_string: str) -> str:

@@ -1,4 +1,5 @@
 import ast
+import logging
 import os
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -9,7 +10,7 @@ from docx.document import Document
 from docx.shared import Inches, Pt
 from docx.table import _Cell
 
-from src.constants import Font, FontSize, Gender, Language, Program, PromptName
+from src.constants import LOGGER_NAME, Font, FontSize, Gender, Language, Program, PromptName
 from src.report_utils import (
     replace_and_format_header_text,
     replace_piet_in_list,
@@ -31,6 +32,9 @@ from src.write_report_data import (
     conclusion,
     update_language_skills_table,
 )
+
+logger = logging.getLogger(LOGGER_NAME)
+
 
 COGCAP_TABLE_INDEX = 1
 CONCLUSION_TABLE_INDEX = 2
@@ -80,7 +84,7 @@ class ReportWriter(ABC):
             return self.doc
 
         if len(scores) != 6:
-            print("Warning: Invalid scores data. Expected a list of 6 numbers.")
+            logger.warning("Invalid scores data. Expected a list of 6 numbers.")
             return self.doc
 
         for i in range(6):
@@ -187,8 +191,8 @@ class DataReportWriter(ReportWriter):
         """Updates the Word document."""
         try:
             doc = docx.Document(resource_path("resources/Assessment_report_Data_chiefs.docx"))
-        except Exception as e:
-            print(f"Error: Failed to open template: {e}")
+        except Exception:
+            logger.exception("Failed to open template")
             return None
 
         # --- Prepare Replacement Dictionary ---
@@ -225,7 +229,7 @@ class DataReportWriter(ReportWriter):
                     placeholder = f"{{prompt5_language_{language.value.lower()}}}"
                     replacements[placeholder] = proficiency_level
                 else:
-                    print(f"Warning: No proficiency level provided for {language}.")
+                    logger.warning(f"No proficiency level provided for {language}.")
                     placeholder = f"{{prompt5_language_{language.value.lower()}}}"
                     replacements[placeholder] = "N/A"
 
@@ -246,7 +250,7 @@ class DataReportWriter(ReportWriter):
                     # Store the processed list back into the _original key
                     output_dic[original_key] = list_items_pietless  # Store the list directly
                 else:
-                    print(f"Warning: Could not process {original_key} as a list after eval.")
+                    logger.warning(f"Could not process {original_key} as a list after eval.")
                     output_dic[original_key] = []  # Ensure it's an empty list on failure
             else:
                 # Ensure the key exists even if the prompt failed, to avoid errors later
@@ -281,7 +285,7 @@ class DataReportWriter(ReportWriter):
             add_icons_data_chief(doc, qual_scores[:18])
             add_icons_data_chief_2(doc, qual_scores[18:23])
         else:
-            print("Warning: Invalid qual_scores data.")
+            logger.warning("Invalid qual_scores data.")
 
         # Data tools (icons)
         data_tools_str = output_dic.get(PromptName.DATATOOLS, "[]")
@@ -289,7 +293,7 @@ class DataReportWriter(ReportWriter):
         if isinstance(data_tools_scores, list):
             add_icons_data_tools(doc, data_tools_scores)
         else:
-            print("Warning: Invalid data_tools_scores data.")
+            logger.warning("Invalid data_tools_scores data.")
 
         # --- Save Document ---
         current_time = datetime.now()
@@ -308,9 +312,9 @@ class DataReportWriter(ReportWriter):
             # Apply final paragraph splitting and styling *before* saving
             split_paragraphs_at_marker_and_style(doc)  # This handles the display format
             doc.save(updated_doc_path)
-            print(f"Document saved: {updated_doc_path}")  # Added print statement
-        except Exception as e:
-            print(f"Error: Failed to save document: {e}")
+            logger.info(f"Document saved: {updated_doc_path}")
+        except Exception:
+            logger.exception("Failed to save document")
             return None
         else:
             return updated_doc_path

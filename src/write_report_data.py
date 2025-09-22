@@ -1,4 +1,5 @@
 import ast
+import logging
 import os
 import re
 from datetime import datetime
@@ -8,7 +9,7 @@ import docx
 from docx.document import Document
 from docx.shared import Pt, RGBColor
 
-from src.constants import Font, FontSize, Gender, Program
+from src.constants import LOGGER_NAME, Font, FontSize, Gender, Program
 
 # Import common functions from report_utils
 from src.report_utils import (
@@ -29,6 +30,9 @@ from src.write_report_common import (
     add_content_detailstable,
     add_icon_to_cell,
 )
+
+logger = logging.getLogger(LOGGER_NAME)
+
 
 # --- Constants ---
 DETAILS_TABLE_INDEX = 0
@@ -68,8 +72,8 @@ def update_document(
     """Updates the Word document."""
     try:
         doc = docx.Document(resource_path("resources/Assessment_report_Data_chiefs.docx"))
-    except Exception as e:
-        print(f"Error: Failed to open template: {e}")
+    except Exception:
+        logger.exception("Failed to open template")
         return None
 
     # --- Prepare Replacement Dictionary ---
@@ -103,7 +107,7 @@ def update_document(
                 placeholder = f"{{prompt5_language_{language_name.lower()}}}"
                 replacements[placeholder] = proficiency_level
             else:
-                print(f"Warning: No proficiency level provided for {language_name}.")
+                logger.warning(f"No proficiency level provided for {language_name}.")
                 placeholder = f"{{prompt5_language_{language_name.lower()}}}"
                 replacements[placeholder] = "N/A"
 
@@ -124,7 +128,7 @@ def update_document(
                 # Store the processed list back into the _original key
                 output_dic[original_key] = list_items_pietless  # Store the list directly
             else:
-                print(f"Warning: Could not process {original_key} as a list after eval.")
+                logger.warning(f"Could not process {original_key} as a list after eval.")
                 output_dic[original_key] = []  # Ensure it's an empty list on failure
         else:
             # Ensure the key exists even if the prompt failed, to avoid errors later
@@ -159,7 +163,7 @@ def update_document(
         add_icons_data_chief(doc, qual_scores[:18])
         add_icons_data_chief_2(doc, qual_scores[18:23])
     else:
-        print("Warning: Invalid qual_scores data.")
+        logger.warning("Invalid qual_scores data.")
 
     # Data tools (icons)
     data_tools_str = output_dic.get("prompt8_datatools", "[]")
@@ -167,7 +171,7 @@ def update_document(
     if isinstance(data_tools_scores, list):
         add_icons_data_tools(doc, data_tools_scores)
     else:
-        print("Warning: Invalid data_tools_scores data.")
+        logger.warning("Invalid data_tools_scores data.")
 
     # --- Save Document ---
     current_time = datetime.now()
@@ -186,9 +190,9 @@ def update_document(
         # Apply final paragraph splitting and styling *before* saving
         split_paragraphs_at_marker_and_style(doc)  # This handles the display format
         doc.save(updated_doc_path)
-        print(f"Document saved: {updated_doc_path}")  # Added print statement
-    except Exception as e:
-        print(f"Error: Failed to save document: {e}")
+        logger.info(f"Document saved: {updated_doc_path}")
+    except Exception:
+        logger.exception("Failed to save document")
         return None
     else:
         return updated_doc_path
@@ -233,15 +237,15 @@ def format_interests_output(interests_json_string: str) -> str:
             return "No specific interests identified"
 
         return formatted_text.strip()
-    except (ValueError, SyntaxError) as e:
-        print(f"Error parsing interests: {e}")
+    except (ValueError, SyntaxError):
+        logger.exception("Error parsing interests")
         return "Could not parse interests information."
 
 
 def add_icons_data_chief(doc: Document, list_scores: list[int]) -> None:
     """Adds icons to Human Skills tables."""
     if not isinstance(list_scores, list):
-        print("Warning: list_scores is not a list.")
+        logger.warning("list_scores is not a list.")
         return
 
     score_index = 0
@@ -269,7 +273,7 @@ def add_icons_data_chief(doc: Document, list_scores: list[int]) -> None:
 def add_icons_data_chief_2(doc: Document, list_scores: list[int]) -> None:
     """Adds icons to Technical Skills tables."""
     if not isinstance(list_scores, list):
-        print("Warning: list_scores is not a list.")
+        logger.warning("list_scores is not a list.")
         return
 
     score_index = 0
@@ -297,7 +301,7 @@ def add_icons_data_chief_2(doc: Document, list_scores: list[int]) -> None:
 def add_icons_data_tools(doc: Document, list_scores: list[int | None]) -> None:
     """Adds icons to Data Tools tables."""
     if not isinstance(list_scores, list):
-        print("Warning: list_scores is not a list.")
+        logger.warning("list_scores is not a list.")
         return
 
     # Ensure we have exactly 5 scores, padding with None (our N/A placeholder) if needed
@@ -348,8 +352,8 @@ def add_interests_table(doc: Document, interests_text: str) -> None:
                     interests_string = "No specific interests identified"
                 else:
                     interests_string = ", ".join(interests_list)
-            except Exception as e:
-                print(f"Error processing interests: {e}")
+            except Exception:
+                logger.exception("Error processing interests")
                 # Fallback to simple string processing if literal_eval fails
                 interests_list = [
                     s.strip() for s in interests_text.strip("[]").split(",") if s.strip()
@@ -365,14 +369,14 @@ def add_interests_table(doc: Document, interests_text: str) -> None:
                 else:
                     interests_string = ", ".join(interests_list)
     else:
-        print("Warning: interests_text is not a string.")
+        logger.warning("interests_text is not a string.")
         interests_string = "No specific interests identified"
 
     cell = safe_get_cell(table, 1, 0)
     if cell:
         safe_set_text(cell, interests_string)
     else:
-        print("Warning: Could not find cell to add interests text.")
+        logger.warning("Could not find cell to add interests text.")
 
 
 def conclusion(doc: Document, column: int, list_items: list[Any]) -> None:
@@ -383,7 +387,7 @@ def conclusion(doc: Document, column: int, list_items: list[Any]) -> None:
 
     # Expecting list_items to be a Python list already
     if not isinstance(list_items, list):
-        print(f"Warning: conclusion expected a list, got {type(list_items)}")
+        logger.warning(f"conclusion expected a list, got {type(list_items)}")
         return
 
     cell = safe_get_cell(table, 1, column)
@@ -413,7 +417,7 @@ def update_language_skills_table(doc: Document, language_levels: list[str]) -> N
     # Get the language skills table (14th table)
     table = safe_get_table(doc, LANGUAGE_SKILLS_TABLE_INDEX)
     if not table:
-        print("Warning: Language skills table not found.")
+        logger.warning("Language skills table not found.")
         return
 
     # Valid language levels for matching
@@ -437,7 +441,7 @@ def update_language_skills_table(doc: Document, language_levels: list[str]) -> N
     # Update each language row with its corresponding level
     for i, row_index in enumerate(language_rows):
         if i >= len(language_levels):
-            print(f"Warning: No level provided for language row {i + 1}")
+            logger.warning(f"No level provided for language row {i + 1}")
             continue
 
         raw_level = language_levels[i]
@@ -464,13 +468,13 @@ def update_language_skills_table(doc: Document, language_levels: list[str]) -> N
 
                     # Verify it's a valid level
                     if normalized_level not in [level.upper() for level in valid_levels]:
-                        print(
-                            f"Warning: Extracted invalid level {normalized_level} from {raw_level}, using as is"
+                        logger.warning(
+                            f"Extracted invalid level {normalized_level} from {raw_level}, using as is"
                         )
 
         # If we couldn't normalize, use the raw level
         if normalized_level is None:
-            print(f"Warning: Unable to normalize language level '{raw_level}', using as is")
+            logger.warning(f"Unable to normalize language level '{raw_level}', using as is")
             normalized_level = str(raw_level).upper()
 
         # Replace the "A1/B1/B2.." placeholder in the first cell

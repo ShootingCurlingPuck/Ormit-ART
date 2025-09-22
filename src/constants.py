@@ -70,3 +70,5 @@ class PromptName(StrEnum):
 REQUIRED_FILE_CATEGORIES = [
     file_category for file_category in FileCategory if file_category != FileCategory.ICP
 ]
+
+LOGGER_NAME = "ART-logger"
