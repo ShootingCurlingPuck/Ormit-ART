@@ -283,9 +283,9 @@ Cons: Slower response, higher cost.""")
             file_label = QLabel(file_cat, self)
             file_browser_btn = QPushButton("No file selected")
             file_browser_btn.clicked.connect(
-                lambda file_button=file_browser_btn, file_category=file_cat: self.open_file_dialog(
-                    file_button, file_category
-                )
+                lambda _,  # Uhm.... No idea why this "_" is needed, but it works... TODO: investigate
+                file_button=file_browser_btn,
+                file_category=file_cat: self.open_file_dialog(file_button, file_category)
             )
             layout.addWidget(file_label, 7 + idx, 0)
             layout.addWidget(file_browser_btn, 7 + idx, 1, 1, 2)
