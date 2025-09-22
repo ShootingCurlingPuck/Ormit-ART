@@ -276,33 +276,19 @@ Cons: Slower response, higher cost.""")
         self.program_combo.setToolTip("Select a traineeship")
         layout.addWidget(self.program_combo, 6, 1)
 
-        # Document labels
-        self.file_label1 = QLabel(FileCategory.PAPI, self)
-        self.file_label2 = QLabel(FileCategory.COG, self)
-        self.file_label3 = QLabel(FileCategory.NOTES, self)
-
-        # File selection buttons
         self.selected_files: dict[FileCategory, str] = {}
-        self.file_browser_btn1 = QPushButton("No file selected")
-        self.file_browser_btn1.clicked.connect(
-            lambda: self.open_file_dialog(self.file_browser_btn1, FileCategory.PAPI)
-        )
-        layout.addWidget(self.file_label1, 7, 0)
-        layout.addWidget(self.file_browser_btn1, 7, 1, 1, 2)
 
-        self.file_browser_btn2 = QPushButton("No file selected")
-        self.file_browser_btn2.clicked.connect(
-            lambda: self.open_file_dialog(self.file_browser_btn2, FileCategory.COG)
-        )
-        layout.addWidget(self.file_label2, 8, 0)
-        layout.addWidget(self.file_browser_btn2, 8, 1, 1, 2)
-
-        self.file_browser_btn3 = QPushButton("No file selected")
-        self.file_browser_btn3.clicked.connect(
-            lambda: self.open_file_dialog(self.file_browser_btn3, FileCategory.NOTES)
-        )
-        layout.addWidget(self.file_label3, 9, 0)
-        layout.addWidget(self.file_browser_btn3, 9, 1, 1, 2)
+        idx = 0
+        for idx, file_cat in enumerate(REQUIRED_FILE_CATEGORIES):
+            file_label = QLabel(file_cat, self)
+            file_browser_btn = QPushButton("No file selected")
+            file_browser_btn.clicked.connect(
+                lambda file_button=file_browser_btn, file_category=file_cat: self.open_file_dialog(
+                    file_button, file_category
+                )
+            )
+            layout.addWidget(file_label, 7 + idx, 0)
+            layout.addWidget(file_browser_btn, 7 + idx, 1, 1, 2)
 
         # ICP Info for Prompt 3 (Personality)
         self.icp_info_prompt3_label = QLabel("ICP Info (Personality):")
@@ -310,14 +296,14 @@ Cons: Slower response, higher cost.""")
             Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
         )
         self.icp_info_prompt3_label.setVisible(False)
-        layout.addWidget(self.icp_info_prompt3_label, 10, 0)
+        layout.addWidget(self.icp_info_prompt3_label, 7 + idx + 1, 0)
 
         self.icp_info_prompt3_input = QLineEdit()
         self.icp_info_prompt3_input.setPlaceholderText(
             "Optional: Specific instructions/context for Prompt 3"
         )
         self.icp_info_prompt3_input.setVisible(False)
-        layout.addWidget(self.icp_info_prompt3_input, 10, 1, 1, 2)
+        layout.addWidget(self.icp_info_prompt3_input, 7 + idx + 1, 1, 1, 2)
 
         # ICP Info for Prompt 6a (Strengths)
         self.icp_info_prompt6a_label = QLabel("ICP Info (Strengths):")
@@ -325,14 +311,14 @@ Cons: Slower response, higher cost.""")
             Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
         )
         self.icp_info_prompt6a_label.setVisible(False)
-        layout.addWidget(self.icp_info_prompt6a_label, 11, 0)
+        layout.addWidget(self.icp_info_prompt6a_label, 7 + idx + 2, 0)
 
         self.icp_info_prompt6a_input = QLineEdit()
         self.icp_info_prompt6a_input.setPlaceholderText(
             "Optional: Specific instructions/context for Prompt 6a"
         )
         self.icp_info_prompt6a_input.setVisible(False)
-        layout.addWidget(self.icp_info_prompt6a_input, 11, 1, 1, 2)
+        layout.addWidget(self.icp_info_prompt6a_input, 7 + idx + 2, 1, 1, 2)
 
         # ICP Info for Prompt 6b (Improvements)
         self.icp_info_prompt6b_label = QLabel("ICP Info (Improvements):")
@@ -340,14 +326,14 @@ Cons: Slower response, higher cost.""")
             Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
         )
         self.icp_info_prompt6b_label.setVisible(False)
-        layout.addWidget(self.icp_info_prompt6b_label, 12, 0)
+        layout.addWidget(self.icp_info_prompt6b_label, 7 + idx + 3, 0)
 
         self.icp_info_prompt6b_input = QLineEdit()
         self.icp_info_prompt6b_input.setPlaceholderText(
             "Optional: Specific instructions/context for Prompt 6b"
         )
         self.icp_info_prompt6b_input.setVisible(False)
-        layout.addWidget(self.icp_info_prompt6b_input, 12, 1, 1, 2)
+        layout.addWidget(self.icp_info_prompt6b_input, 7 + idx + 3, 1, 1, 2)
 
         # ICP Description File Button/Label
         self.icp_desc_button = QPushButton("No file selected (Required for ICP)")
@@ -360,8 +346,8 @@ Cons: Slower response, higher cost.""")
 
         self.icp_desc_label = QLabel(FileCategory.ICP, self)
         self.icp_desc_label.setVisible(False)
-        layout.addWidget(self.icp_desc_button, 13, 1, 1, 2)
-        layout.addWidget(self.icp_desc_label, 13, 0)
+        layout.addWidget(self.icp_desc_button, 7 + idx + 4, 1, 1, 2)
+        layout.addWidget(self.icp_desc_label, 7 + idx + 4, 0)
 
         # Connect program selection change signal AFTER ICP widgets are created
         self.program_combo.currentIndexChanged.connect(self.handle_program_change)
@@ -370,7 +356,7 @@ Cons: Slower response, higher cost.""")
         self.submitbtn = QPushButton("Submit")
         self.submitbtn.setFixedWidth(90)
         self.submitbtn.hide()
-        layout.addWidget(self.submitbtn, 14, 2, Qt.AlignmentFlag.AlignRight)
+        layout.addWidget(self.submitbtn, 7 + idx + 5, 2, Qt.AlignmentFlag.AlignRight)
         self.submitbtn.clicked.connect(self.handle_submit)
 
         # Initialize UI based on default selection

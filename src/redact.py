@@ -115,9 +115,9 @@ def redact_folder(gui_data: GuiData | IcpGuiData) -> None:
         # Determine destination name in temp directory
         extension = os.path.splitext(file_path)[1][1:].lower()
         # Use standard names expected by send_prompts
-        if file_key == FileCategory.PAPI:
+        if file_key == FileCategory.DRIVE:
             dest_path = f"temp/PAPI Gebruikersrapport.{extension}"
-        elif file_key == FileCategory.COG:
+        elif file_key == FileCategory.BRAIN:
             dest_path = f"temp/Cog. Test.{extension}"
         elif file_key == FileCategory.NOTES:
             dest_path = f"temp/Assessment Notes.{extension}"

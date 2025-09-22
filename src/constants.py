@@ -19,8 +19,9 @@ class FileTypeFilter(StrEnum):
 
 
 class FileCategory(StrEnum):
-    PAPI = "PAPI Gebruikersrapport"
-    COG = "Cog. Test"
+    DRIVE = "Drive"
+    SWIPE = "Swipe"
+    BRAIN = "Brain"
     NOTES = "Assessment Notes"
     ICP = "ICP Description File"
 
