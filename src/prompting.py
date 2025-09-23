@@ -223,7 +223,13 @@ def send_prompts(data: GuiData | IcpGuiData) -> str:
     path_to_mngtprofile = "resources/The MNGT Profile.docx"
     path_to_dataprofile = "resources/The Data Chiefs profile.docx"
 
-    lst_files = [*os.listdir("temp/"), path_to_contextfile, path_to_toneofvoice]
+    lst_files = [
+        os.path.join("temp/", path_to_file)
+        for path_to_file in os.listdir("temp/")
+        if os.path.isfile(os.path.join("temp/", path_to_file))
+    ]
+    lst_files.append(path_to_contextfile)
+    lst_files.append(path_to_toneofvoice)
 
     selected_program = data.traineeship
     # Use MNGT profile for both MNGT and NEW programs
@@ -235,8 +241,6 @@ def send_prompts(data: GuiData | IcpGuiData) -> str:
     file_contents: dict[str, str] = {}
     for file_path in lst_files:
         file_name, extension = os.path.splitext(os.path.basename(file_path))
-        if "/" not in file_path:
-            file_path = f"temp/{file_path}"
         if extension.lower() == ".pdf":
             file_contents[file_name] = read_pdf(file_path)
         elif extension.lower() == ".docx":
