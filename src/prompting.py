@@ -7,7 +7,7 @@ import time
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
-import pypdf
+import ghostscript as gs
 from docx import Document
 from google import genai
 
@@ -29,16 +29,25 @@ if TYPE_CHECKING:
 logger = logging.getLogger(LOGGER_NAME)
 
 
-def read_pdf(file_path: str) -> str:
-    """Reads and returns text from a PDF file."""
-    text = ""
-    try:
-        with open(file_path, "rb") as file:
-            reader = pypdf.PdfReader(file)
-            for page in reader.pages:
-                text += page.extract_text() + "\n"
-    except Exception:
-        logger.exception(f"Error reading PDF file {file_path}")
+def read_pdf(temp_file_path: str) -> str:
+    new_temp_file_path = temp_file_path.replace(".pdf", ".txt")
+    args = [
+        "pdf2txt",
+        "-o",
+        new_temp_file_path,  # Output text file
+        "-sDEVICE=txtwrite",  # Output device
+        "-dNOPAUSE",  # No pause after each page
+        "-dBATCH",  # Exit after processing all pages
+        "-dSAFER",  # Enable safe mode
+        "-dQUIET",  # Suppress output messages
+        temp_file_path,  # Input PDF file
+    ]
+    gs.Ghostscript(*args)
+    with open(new_temp_file_path, "rb") as f:
+        binary_txt = f.read()
+    if os.path.exists(new_temp_file_path):
+        os.unlink(new_temp_file_path)
+    text = binary_txt.decode("utf-8", errors="ignore")
     return text
 
 
