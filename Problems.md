@@ -1,0 +1,13 @@
+# Problemen
+- Te veel images in de nieuwe reports waardoor read_pdf te veel informatie mist.
+  - Oplossing 1: De afbeeldingen laten analyseren door Gemini
+    - Probleem 1: Name redaction is not possible
+    - Probleem 2: Depends on randomness of the AI (less trustworthy)
+  - Oplossing 2: Informatie uit de AssessFirst API halen
+    - Probleem 1: Geen idee welke informatie beschikbaar is
+    - Probleem 2: Hoe informatie toevoegen aan report
+- Name redaction isn't flexible enough, wat als enkel voor- of achternaam? Wat als "Mark van Poppel" (redact "van" overal)?
+  - Oplossing 1: Euhmmmmmm
+  - Oplossing 2: Nopes
+- Bruteforce retry when an error occurs with the AI models (don't change a thing, expect a different outcome: WTF)
+- 
